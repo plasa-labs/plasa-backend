@@ -58,26 +58,26 @@ export const checkFollowerSince = onRequest(async (request, response) => {
 })
 
 // Testing EIP712 signatures
+// Deadline is automatically added to the message
 
 export const instagramAccountOwnershipSignature = onRequest(async (request, response) => {
 	const username = request.query.username as string
 	const recipient = request.query.recipient as string
-	const deadline = request.query.deadline as string
 
-	if (!username || !recipient || !deadline) {
+	if (!username || !recipient) {
 		throw new HttpsError('invalid-argument', 'Missing username, recipient, or deadline!')
 	}
 
-	const signature = await signInstagramAccountOwnership(username, recipient, Number(deadline))
+	const signature = await signInstagramAccountOwnership(username, recipient)
 	response.json({ signature })
 })
 
 export const instagramFollowerSinceSignature = onRequest(async (request, response) => {
 	// This function is being used to test the follower since signature
 	// Since should be queried from firestore instead of being passed in as a parameter
-	const { followed, follower, since, recipient, deadline } = request.query
+	const { followed, follower, since, recipient } = request.query
 
-	if (!followed || !follower || !since || !recipient || !deadline) {
+	if (!followed || !follower || !since || !recipient) {
 		throw new HttpsError(
 			'invalid-argument',
 			'Missing followed, follower, since, recipient, or deadline!'
@@ -88,8 +88,7 @@ export const instagramFollowerSinceSignature = onRequest(async (request, respons
 		followed as string,
 		follower as string,
 		Number(since),
-		recipient as string,
-		Number(deadline)
+		recipient as string
 	)
 	response.json({ signature })
 })
