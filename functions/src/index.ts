@@ -102,10 +102,10 @@ export const instagramFollowerSinceSignature = onRequest(async (request, respons
 // Siempre te devuelve firma para stamp de ownership de cuenta
 // Si no es follower, te agrega isFollower: false
 // Y si es follower, te agrega isFollower: true, followerSince y firma para stamp de follower
-export const instagramUsernameData = onRequest(async (request, response) => {
-	const { username, userAddress } = request.body
+export const instagramUserData = onRequest(async (request, response) => {
+	const { instagramUsername, userAddress } = request.body
 
-	if (!username || !userAddress) {
+	if (!instagramUsername || !userAddress) {
 		response.status(400).json({ error: 'Missing username or userAddress' })
 		return
 	}
@@ -114,7 +114,7 @@ export const instagramUsernameData = onRequest(async (request, response) => {
 
 	try {
 		const accountOwnershipStampSignature = await signInstagramAccountOwnership(
-			username,
+			instagramUsername,
 			userAddress
 		)
 		responseObject.accountOwnershipStampSignature = accountOwnershipStampSignature
@@ -124,7 +124,7 @@ export const instagramUsernameData = onRequest(async (request, response) => {
 	}
 
 	try {
-		const followerData = await getFollowerSince(username)
+		const followerData = await getFollowerSince(instagramUsername)
 
 		if (!followerData) {
 			responseObject.isFollower = false
@@ -134,8 +134,8 @@ export const instagramUsernameData = onRequest(async (request, response) => {
 			responseObject.followerSince = followerSince
 
 			const followerStampSignature = await signInstagramFollowerSince(
-				username,
-				userAddress,
+				process.env.FOLLOWED_USERNAME as string,
+				instagramUsername,
 				followerSince,
 				userAddress
 			)
