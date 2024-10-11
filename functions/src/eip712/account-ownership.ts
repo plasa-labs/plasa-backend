@@ -1,7 +1,6 @@
 import { EIP712Signer } from './eip712'
 import { Platform, instagram } from './platforms'
 
-// Generic function to sign account ownership
 async function signAccountOwnership(
 	platform: Platform,
 	id: string,
@@ -28,12 +27,11 @@ async function signAccountOwnership(
 	}
 }
 
-// New Instagram-specific function
 async function signInstagramAccountOwnership(username: string, recipient: string): Promise<string> {
 	return signAccountOwnership(instagram, username, recipient)
 }
 
-// uncomment to run the example
+// Uncomment to run the example
 // signInstagramAccountOwnership('user123', '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB')
 
 export { signInstagramAccountOwnership }
