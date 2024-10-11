@@ -4,18 +4,20 @@ import { Platform, instagram } from './platforms'
 async function signAccountOwnership(
 	platform: Platform,
 	id: string,
-	recipient: string
+	recipient: string,
+	deadline: number
 ): Promise<string> {
 	const signer = new EIP712Signer(platform.ownershipContractAddress)
 	const types = {
 		AccountOwnership: [
 			{ name: 'platform', type: 'string' },
 			{ name: 'id', type: 'string' },
-			{ name: 'recipient', type: 'address' }
+			{ name: 'recipient', type: 'address' },
+			{ name: 'deadline', type: 'uint256' }
 		]
 	}
 
-	const message = { platform: platform.name, id, recipient }
+	const message = { platform: platform.name, id, recipient, deadline }
 
 	try {
 		const signature = await signer.signTypedData(types, message)
@@ -27,11 +29,16 @@ async function signAccountOwnership(
 	}
 }
 
-async function signInstagramAccountOwnership(username: string, recipient: string): Promise<string> {
-	return signAccountOwnership(instagram, username, recipient)
+async function signInstagramAccountOwnership(
+	username: string,
+	recipient: string,
+	deadline: number
+): Promise<string> {
+	return signAccountOwnership(instagram, username, recipient, deadline)
 }
 
 // Uncomment to run the example
-// signInstagramAccountOwnership('user123', '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB')
+// const exampleDeadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+// signInstagramAccountOwnership('user123', '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB', exampleDeadline)
 
 export { signInstagramAccountOwnership }
