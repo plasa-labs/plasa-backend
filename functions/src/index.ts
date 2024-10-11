@@ -1,27 +1,14 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import { onRequest } from 'firebase-functions/v2/https'
 import * as logger from 'firebase-functions/logger'
 import { HttpsError } from 'firebase-functions/v1/auth'
-import { getFirestore } from 'firebase-admin/firestore'
 import { initializeApp } from 'firebase-admin/app'
 
 import { signInstagramAccountOwnership } from './eip712/account-ownership'
 import { signInstagramFollowerSince } from './eip712/follower-since'
 import { getFollowerSince } from './database/follower-since'
-
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+import { checkDocumentInCollection } from './database/helper'
 
 initializeApp()
-const db = getFirestore()
 
 // Testing functions
 
@@ -32,25 +19,23 @@ export const helloWorld = onRequest((request, response) => {
 
 // Testing firestore read
 
-export const checkFollowerSince = onRequest(async (request, response) => {
+export const readDataFromFirestore = onRequest(async (request, response) => {
 	try {
-		const { collectionId, username } = request.query
+		const { collectionId, documentId } = request.query
 
 		if (!collectionId) {
 			throw new HttpsError('invalid-argument', 'Missing collectionId!')
 		}
-		if (!username) {
-			throw new HttpsError('invalid-argument', 'Missing username!')
+		if (!documentId) {
+			throw new HttpsError('invalid-argument', 'Missing documentId!')
 		}
 
-		const docRef = db.collection(collectionId as string).doc(username as string)
-		const doc = await docRef.get()
+		const doc = await checkDocumentInCollection(documentId as string, collectionId as string)
 
-		if (!doc.exists) {
+		if (!doc) {
 			response.json(false)
 		} else {
-			const followerSince = doc.data()?.follower_since
-			response.json(followerSince || false)
+			response.json(doc.data())
 		}
 	} catch (error) {
 		logger.error('Error in checkFollowerSince:', error)
@@ -95,6 +80,13 @@ export const instagramFollowerSinceSignature = onRequest(async (request, respons
 })
 
 // Production functions
+
+interface InstagramUserDataResponse {
+	accountOwnershipStampSignature?: string
+	isFollower?: boolean
+	followerSince?: number
+	followerStampSignature?: string
+}
 
 // Esta debería la única función que habría que llamar del back
 // Mandas username y address, te devuelve todos los datos necesarios
@@ -148,10 +140,3 @@ export const instagramUserData = onRequest(async (request, response) => {
 		response.status(500).json({ error: 'Error checking follower status' })
 	}
 })
-
-interface InstagramUserDataResponse {
-	accountOwnershipStampSignature?: string
-	isFollower?: boolean
-	followerSince?: number
-	followerStampSignature?: string
-}

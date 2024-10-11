@@ -1,6 +1,6 @@
 import { getFirestore, DocumentSnapshot } from 'firebase-admin/firestore'
 
-async function checkDocumentInCollection(
+export async function checkDocumentInCollection(
 	documentId: string,
 	collectionId: string
 ): Promise<DocumentSnapshot | null> {
@@ -11,5 +11,3 @@ async function checkDocumentInCollection(
 	// Return the entire document snapshot instead of just the exists property
 	return doc.exists ? doc : null
 }
-
-export { checkDocumentInCollection }
