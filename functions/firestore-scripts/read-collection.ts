@@ -6,7 +6,7 @@ import * as path from 'path'
 
 dotenv.config()
 
-const collectionId = process.env.COLLECTION_ID
+const collectionId = process.env.COLLECTION_TO_READ
 const serviceAccountPath = path.join(__dirname, process.env.SERVICE_ACCOUNT_PATH!)
 
 initializeApp({
