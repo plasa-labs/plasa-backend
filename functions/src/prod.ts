@@ -42,20 +42,20 @@ export const instagramUserData = onRequest(async (request, response) => {
 		// Check follower status and sign if applicable
 		const followerData = await getFollowerSince(instagramUsername)
 
-		if (followerData) {
+		if (followerData.exists) {
 			responseObject.isFollower = true
 			const { followerSince } = followerData
 
 			const followerStamp = await signInstagramFollowerSince(
 				process.env.FOLLOWED_USERNAME as string,
 				instagramUsername,
-				followerSince,
+				followerSince as number,
 				userAddress
 			)
 			responseObject.followerStamp = {
 				signature: followerStamp.signature,
 				deadline: followerStamp.deadline,
-				followerSince
+				followerSince: followerSince as number
 			}
 		} else {
 			responseObject.isFollower = false
