@@ -6,8 +6,7 @@ async function signFollowerSince(
 	followed: string,
 	follower: string,
 	since: number,
-	recipient: string,
-	deadline: number
+	recipient: string
 ): Promise<string> {
 	const signer = new EIP712Signer(platform.followerSinceContractAddress)
 	const types = {
@@ -26,8 +25,7 @@ async function signFollowerSince(
 		followed,
 		follower,
 		since,
-		recipient,
-		deadline
+		recipient
 	}
 
 	try {
@@ -44,10 +42,9 @@ async function signInstagramFollowerSince(
 	followed: string,
 	follower: string,
 	since: number,
-	recipient: string,
-	deadline: number
+	recipient: string
 ): Promise<string> {
-	return signFollowerSince(instagram, followed, follower, since, recipient, deadline)
+	return signFollowerSince(instagram, followed, follower, since, recipient)
 }
 
 // Uncomment to run the example
@@ -55,8 +52,7 @@ async function signInstagramFollowerSince(
 // 	'user123',
 // 	'follower456',
 // 	1625097600,
-// 	'0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
-// 	Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+// 	'0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB'
 // )
 
 export { signInstagramFollowerSince }
