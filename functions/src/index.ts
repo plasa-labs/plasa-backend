@@ -15,6 +15,7 @@ import { initializeApp } from 'firebase-admin/app'
 
 import { signInstagramAccountOwnership } from './eip712/account-ownership'
 import { signInstagramFollowerSince } from './eip712/follower-since'
+import { getFollowerSince } from './database/follower-since'
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -95,6 +96,62 @@ export const instagramFollowerSinceSignature = onRequest(async (request, respons
 
 // Production functions
 
-// Account ownership
+// Esta debería la única función que habría que llamar del back
+// Mandas username y address, te devuelve todos los datos necesarios
 
-// Follower since
+// Siempre te devuelve firma para stamp de ownership de cuenta
+// Si no es follower, te agrega isFollower: false
+// Y si es follower, te agrega isFollower: true, followerSince y firma para stamp de follower
+export const instagramUsernameData = onRequest(async (request, response) => {
+	const { username, userAddress } = request.body
+
+	if (!username || !userAddress) {
+		response.status(400).json({ error: 'Missing username or userAddress' })
+		return
+	}
+
+	const responseObject: InstagramUserDataResponse = {}
+
+	try {
+		const accountOwnershipStampSignature = await signInstagramAccountOwnership(
+			username,
+			userAddress
+		)
+		responseObject.accountOwnershipStampSignature = accountOwnershipStampSignature
+	} catch (error) {
+		console.error('Error signing account ownership:', error)
+		response.status(500).json({ error: 'Error signing account ownership' })
+	}
+
+	try {
+		const followerData = await getFollowerSince(username)
+
+		if (!followerData) {
+			responseObject.isFollower = false
+		} else {
+			responseObject.isFollower = true
+			const { followerSince } = followerData
+			responseObject.followerSince = followerSince
+
+			const followerStampSignature = await signInstagramFollowerSince(
+				username,
+				userAddress,
+				followerSince,
+				userAddress
+			)
+			responseObject.followerStampSignature = followerStampSignature
+		}
+
+		response.status(200).json(responseObject)
+	} catch (error) {
+		console.error('Error checking follower status:', error)
+		response.status(500).json({ error: 'Error checking follower status' })
+	}
+})
+
+interface InstagramUserDataResponse {
+	accountOwnershipStampSignature?: string
+	isFollower?: boolean
+	followerSince?: number
+	followerStampSignature?: string
+}
