@@ -5,7 +5,7 @@ async function signAccountOwnership(
 	platform: Platform,
 	id: string,
 	recipient: string
-): Promise<string> {
+): Promise<{ signature: string; deadline: number }> {
 	const signer = new EIP712Signer(platform.ownershipContractAddress)
 	const types = {
 		AccountOwnership: [
@@ -20,16 +20,19 @@ async function signAccountOwnership(
 	const message = { platform: platform.name, id, recipient, deadline }
 
 	try {
-		const signature = await signer.signTypedData(types, message)
+		const { signature, deadline } = await signer.signTypedData(types, message)
 		console.log(`${platform.name} Account Ownership Signature:`, signature)
-		return signature
+		return { signature, deadline }
 	} catch (error) {
 		console.error('Error signing account ownership message:', error)
 		throw error
 	}
 }
 
-async function signInstagramAccountOwnership(username: string, recipient: string): Promise<string> {
+async function signInstagramAccountOwnership(
+	username: string,
+	recipient: string
+): Promise<{ signature: string; deadline: number }> {
 	return signAccountOwnership(instagram, username, recipient)
 }
 

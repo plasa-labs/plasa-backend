@@ -7,7 +7,7 @@ async function signFollowerSince(
 	follower: string,
 	since: number,
 	recipient: string
-): Promise<string> {
+): Promise<{ signature: string; deadline: number }> {
 	const signer = new EIP712Signer(platform.followerSinceContractAddress)
 	const types = {
 		FollowerSince: [
@@ -29,9 +29,9 @@ async function signFollowerSince(
 	}
 
 	try {
-		const signature = await signer.signTypedData(types, message)
+		const { signature, deadline } = await signer.signTypedData(types, message)
 		console.log(`${platform.name} Follower Since Signature:`, signature)
-		return signature
+		return { signature, deadline }
 	} catch (error) {
 		console.error('Error signing follower since message:', error)
 		throw error
@@ -43,7 +43,7 @@ async function signInstagramFollowerSince(
 	follower: string,
 	since: number,
 	recipient: string
-): Promise<string> {
+): Promise<{ signature: string; deadline: number }> {
 	return signFollowerSince(instagram, followed, follower, since, recipient)
 }
 

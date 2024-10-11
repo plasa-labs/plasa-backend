@@ -32,12 +32,12 @@ class EIP712Signer {
 	async signTypedData(
 		types: Record<string, Array<{ name: string; type: string }>>,
 		message: Record<string, unknown>
-	): Promise<string> {
-		// Add default deadline to the message if not provided
-		message.deadline = getDeadline()
+	): Promise<{ signature: string; deadline: number }> {
+		const deadline = getDeadline()
+		message.deadline = deadline
 
 		const signature = await this.signer.signTypedData(this.domain, types, message)
-		return signature
+		return { signature, deadline }
 	}
 
 	get signerAddress(): string {

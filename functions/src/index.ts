@@ -82,10 +82,9 @@ export const instagramFollowerSinceSignature = onRequest(async (request, respons
 // Production functions
 
 interface InstagramUserDataResponse {
-	accountOwnershipStampSignature?: string
+	accountOwnershipStamp?: { signature: string; deadline: number }
 	isFollower?: boolean
-	followerSince?: number
-	followerStampSignature?: string
+	followerStamp?: { signature: string; deadline: number; followerSince: number }
 }
 
 // Esta debería la única función que habría que llamar del back
@@ -105,11 +104,11 @@ export const instagramUserData = onRequest(async (request, response) => {
 	const responseObject: InstagramUserDataResponse = {}
 
 	try {
-		const accountOwnershipStampSignature = await signInstagramAccountOwnership(
+		const accountOwnershipStamp = await signInstagramAccountOwnership(
 			instagramUsername,
 			userAddress
 		)
-		responseObject.accountOwnershipStampSignature = accountOwnershipStampSignature
+		responseObject.accountOwnershipStamp = accountOwnershipStamp
 	} catch (error) {
 		console.error('Error signing account ownership:', error)
 		response.status(500).json({ error: 'Error signing account ownership' })
@@ -123,15 +122,18 @@ export const instagramUserData = onRequest(async (request, response) => {
 		} else {
 			responseObject.isFollower = true
 			const { followerSince } = followerData
-			responseObject.followerSince = followerSince
 
-			const followerStampSignature = await signInstagramFollowerSince(
+			const followerStamp = await signInstagramFollowerSince(
 				process.env.FOLLOWED_USERNAME as string,
 				instagramUsername,
 				followerSince,
 				userAddress
 			)
-			responseObject.followerStampSignature = followerStampSignature
+			responseObject.followerStamp = {
+				signature: followerStamp.signature,
+				deadline: followerStamp.deadline,
+				followerSince
+			}
 		}
 
 		response.status(200).json(responseObject)
