@@ -13,6 +13,8 @@ import { HttpsError } from 'firebase-functions/v1/auth'
 import { getFirestore } from 'firebase-admin/firestore'
 import { initializeApp } from 'firebase-admin/app'
 
+import { signInstagramAccountOwnership } from './eip712/account-ownership'
+
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
@@ -48,4 +50,16 @@ export const checkFollowerSince = onRequest(async (request, response) => {
 		logger.error('Error in checkFollowerSince:', error)
 		response.status(500).send('Internal Server Error')
 	}
+})
+
+export const instagramAccountOwnershipSignature = onRequest(async (request, response) => {
+	const username = request.query.username as string
+	const recipient = request.query.recipient as string
+
+	if (!username || !recipient) {
+		throw new HttpsError('invalid-argument', 'Missing username or recipient!')
+	}
+
+	const signature = await signInstagramAccountOwnership(username, recipient)
+	response.json({ signature })
 })
