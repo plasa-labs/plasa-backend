@@ -16,6 +16,9 @@ interface InstagramUserDataResponse {
  * @param response - The HTTP response object
  */
 export const instagramUserData = onRequest(async (request, response) => {
+	// Body parameters:
+	// - instagramUsername: string - The Instagram username of the user
+	// - userAddress: string - The Ethereum address of the user
 	const { instagramUsername, userAddress } = request.body
 
 	// Validate input parameters
@@ -24,6 +27,11 @@ export const instagramUserData = onRequest(async (request, response) => {
 		return
 	}
 
+	// Initialize response object
+	// Response format:
+	// - accountOwnershipStamp: { signature: string, deadline: number } | undefined
+	// - isFollower: boolean | undefined
+	// - followerStamp: { signature: string, deadline: number, followerSince: number } | undefined
 	const responseObject: InstagramUserDataResponse = {}
 
 	try {
