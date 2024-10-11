@@ -72,6 +72,8 @@ export const instagramAccountOwnershipSignature = onRequest(async (request, resp
 })
 
 export const instagramFollowerSinceSignature = onRequest(async (request, response) => {
+	// This function is being used to test the follower since signature
+	// Since should be queried from firestore instead of being passed in as a parameter
 	const { followed, follower, since, recipient } = request.query
 
 	if (!followed || !follower || !since || !recipient) {
