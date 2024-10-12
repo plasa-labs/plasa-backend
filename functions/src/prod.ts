@@ -19,11 +19,12 @@ export const instagramUserData = onRequest(async (request, response) => {
 	// Body parameters:
 	// - instagramUsername: string - The Instagram username of the user
 	// - userAddress: string - The Ethereum address of the user
-	const { instagramUsername, userAddress } = request.body
+	// - followedAccount: string - The Instagram account to check for followers
+	const { instagramUsername, userAddress, followedAccount } = request.body
 
 	// Validate input parameters
-	if (!instagramUsername || !userAddress) {
-		response.status(400).json({ error: 'Missing username or userAddress' })
+	if (!instagramUsername || !userAddress || !followedAccount) {
+		response.status(400).json({ error: 'Missing username, userAddress, or followedAccount' })
 		return
 	}
 
@@ -48,14 +49,14 @@ export const instagramUserData = onRequest(async (request, response) => {
 
 	try {
 		// Check follower status and sign if applicable
-		const followerData = await getFollowerSince(instagramUsername)
+		const followerData = await getFollowerSince(instagramUsername, followedAccount)
 
 		if (followerData.exists) {
 			responseObject.isFollower = true
 			const { followerSince } = followerData
 
 			const followerStamp = await signInstagramFollowerSince(
-				process.env.FOLLOWED_USERNAME as string,
+				followedAccount,
 				instagramUsername,
 				followerSince as number,
 				userAddress

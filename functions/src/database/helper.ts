@@ -12,9 +12,16 @@ export async function checkDocumentInCollection(
 	collectionId: string
 ): Promise<DocumentSnapshot | null> {
 	const db = getFirestore()
-	const docRef = db.collection(collectionId).doc(documentId)
+	const collectionRef = db.collection(collectionId)
 
 	try {
+		// Check if the collection exists
+		const collectionSnapshot = await collectionRef.limit(1).get()
+		if (collectionSnapshot.empty) {
+			throw new Error(`Collection ${collectionId} does not exist`)
+		}
+
+		const docRef = collectionRef.doc(documentId)
 		const doc = await docRef.get()
 		return doc.exists ? doc : null
 	} catch (error) {
