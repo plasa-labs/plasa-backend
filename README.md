@@ -2,6 +2,20 @@
 
 Using Firebase Functions and Firestore.
 
+## Table of Contents
+
+- [Plasa Backend](#plasa-backend)
+	- [Table of Contents](#table-of-contents)
+	- [Firebase Functions Endpoints](#firebase-functions-endpoints)
+		- [Endpoint Name: `accountOwnership`](#endpoint-name-accountownership)
+		- [Endpoint Name: `followerStamp`](#endpoint-name-followerstamp)
+	- [Firestore Collections Structure](#firestore-collections-structure)
+		- [Collection: `{followed_account}`](#collection-followed_account)
+	- [Firestore Scripts (@firestore-scripts)](#firestore-scripts-firestore-scripts)
+		- [push-followers.ts](#push-followersts)
+		- [push-followers-multiple.ts](#push-followers-multiplets)
+		- [read-collection.ts](#read-collectionts)
+
 ## Firebase Functions Endpoints
 
 ### Endpoint Name: `accountOwnership`
