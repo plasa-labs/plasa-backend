@@ -3,6 +3,7 @@ import { EIP712Signer } from './eip712/eip712'
 import { spaces } from './spaces/spaces'
 import { getFollowerSince } from './database/follower-since'
 import { generateRandomString, generateRandomFollowerSince } from './utils/random'
+import * as cors from 'cors'
 
 /**
  * Interface representing the signature data for a follower.
@@ -67,68 +68,78 @@ async function generateSignature(
  *
  * @returns An array of SignatureData objects for each space
  */
+const corsHandler = cors({
+	// origin: ['http://localhost:3000', 'https://your-custom-domain.com'],
+	origin: ['http://localhost:3000'],
+	methods: ['GET'],
+	allowedHeaders: ['Content-Type', 'Authorization'],
+	credentials: true
+})
+
 export const signatures = onRequest(async (request, response) => {
-	const { userAddress, instagramUsername } = request.query
+	return corsHandler(request, response, async () => {
+		const { userAddress, instagramUsername } = request.query
 
-	// Validate userAddress
-	if (typeof userAddress !== 'string') {
-		response.status(400).send('Missing or invalid userAddress')
-		return
-	}
+		// Validate userAddress
+		if (typeof userAddress !== 'string') {
+			response.status(400).send('Missing or invalid userAddress')
+			return
+		}
 
-	// Validate instagramUsername if provided
-	if (instagramUsername && typeof instagramUsername !== 'string') {
-		response.status(400).send('Invalid instagramUsername')
-		return
-	}
+		// Validate instagramUsername if provided
+		if (instagramUsername && typeof instagramUsername !== 'string') {
+			response.status(400).send('Invalid instagramUsername')
+			return
+		}
 
-	const signer = new EIP712Signer()
-	const results: SignatureData[] = []
+		const signer = new EIP712Signer()
+		const results: SignatureData[] = []
 
-	// Generate a single random followerUsername if instagramUsername is not provided
-	const randomFollowerUsername = instagramUsername || `fakeuser${generateRandomString(8)}`
+		// Generate a single random followerUsername if instagramUsername is not provided
+		const randomFollowerUsername = instagramUsername || `fakeuser${generateRandomString(8)}`
 
-	// Process each space
-	for (const space of spaces) {
-		let followerUsername: string
-		let followerSince: number
-		let isReal: boolean
+		// Process each space
+		for (const space of spaces) {
+			let followerUsername: string
+			let followerSince: number
+			let isReal: boolean
 
-		if (instagramUsername) {
-			// Use provided Instagram username and check if they're a real follower
-			followerUsername = instagramUsername
-			const since = await getFollowerSince(followerUsername, space.followedUsername)
-			if (since) {
-				// Real follower data found
-				followerSince = since
-				isReal = true
+			if (instagramUsername) {
+				// Use provided Instagram username and check if they're a real follower
+				followerUsername = instagramUsername
+				const since = await getFollowerSince(followerUsername, space.followedUsername)
+				if (since) {
+					// Real follower data found
+					followerSince = since
+					isReal = true
+				} else {
+					// Generate fake data for non-followers
+					followerSince = generateRandomFollowerSince()
+					isReal = false
+				}
 			} else {
-				// Generate fake data for non-followers
+				// Generate fake data when no Instagram username is provided
+				followerUsername = randomFollowerUsername
 				followerSince = generateRandomFollowerSince()
 				isReal = false
 			}
-		} else {
-			// Generate fake data when no Instagram username is provided
-			followerUsername = randomFollowerUsername
-			followerSince = generateRandomFollowerSince()
-			isReal = false
+
+			// Generate signature for the current space
+			const signatureData = await generateSignature(
+				signer,
+				space.name,
+				space.followedUsername,
+				followerUsername,
+				followerSince,
+				userAddress,
+				space.followerSinceStampContractAddress,
+				isReal
+			)
+
+			results.push(signatureData)
 		}
 
-		// Generate signature for the current space
-		const signatureData = await generateSignature(
-			signer,
-			space.name,
-			space.followedUsername,
-			followerUsername,
-			followerSince,
-			userAddress,
-			space.followerSinceStampContractAddress,
-			isReal
-		)
-
-		results.push(signatureData)
-	}
-
-	// Send the results as JSON response
-	response.json(results)
+		// Send the results as JSON response
+		response.json(results)
+	})
 })
