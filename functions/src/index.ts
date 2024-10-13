@@ -11,13 +11,13 @@ initializeApp()
  */
 export const {
 	/** Function to test "Hello World" */
-	helloWorld,
-	/** Function to read data from Firestore */
-	readDataFromFirestore,
-	/** Function to generate Instagram account ownership signature */
-	instagramAccountOwnershipSignature,
-	/** Function to generate Instagram follower since signature */
-	instagramFollowerSinceSignature
+	helloWorld
+	// /** Function to read data from Firestore */
+	// readDataFromFirestore,
+	// /** Function to generate Instagram account ownership signature */
+	// instagramAccountOwnershipSignature,
+	// /** Function to generate Instagram follower since signature */
+	// instagramFollowerSinceSignature
 } = testFunctions
 
 /**
@@ -26,5 +26,5 @@ export const {
  */
 export const {
 	/** Function to fetch Instagram user data */
-	instagramUserData
+	signatures
 } = prodFunctions
