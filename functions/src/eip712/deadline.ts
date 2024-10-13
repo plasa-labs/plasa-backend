@@ -1,22 +1,25 @@
 /**
- * Calculates the deadline timestamp based on the EIP712_DEADLINE_MINUTES environment variable.
- * @returns {number} The deadline timestamp in seconds.
- * @throws {Error} If the environment variable is not set or is invalid.
+ * Calculates the deadline timestamp for EIP-712 signatures.
+ *
+ * This function retrieves the deadline duration from the EIP712_DEADLINE_MINUTES
+ * environment variable and adds it to the current timestamp to determine
+ * the expiration time for the signature.
+ *
+ * @returns {number} The deadline timestamp in seconds since the Unix epoch.
+ * @throws {Error} If the EIP712_DEADLINE_MINUTES environment variable is not set or is invalid.
  */
 export function getDeadline(): number {
-	// Get the deadline minutes from the environment variable
+	// Retrieve the deadline duration from the environment variable
 	const deadlineMinutes: string | undefined = process.env.EIP712_DEADLINE_MINUTES
 
-	// Check if the deadline minutes are set and valid
+	// Validate the deadline duration
 	if (!deadlineMinutes || isNaN(Number(deadlineMinutes))) {
-		throw new Error(
-			'EIP712_DEADLINE_MINUTES environment variable is not set or is not a valid number'
-		)
+		throw new Error('EIP712_DEADLINE_MINUTES environment variable must be set to a valid number')
 	}
 
-	// Calculate the current timestamp in seconds
+	// Get the current timestamp in seconds
 	const currentTimestamp: number = Math.floor(Date.now() / 1000)
 
-	// Calculate and return the deadline timestamp
+	// Calculate the deadline by adding the duration to the current timestamp
 	return currentTimestamp + Number(deadlineMinutes) * 60
 }

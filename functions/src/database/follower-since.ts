@@ -1,29 +1,25 @@
 import { checkDocumentInCollection } from './helper'
 
-interface FollowerSinceResult {
-	exists: boolean
-	followerSince?: number
-}
-
 /**
- * Retrieves the 'follower since' date for a given username.
- * @param username - The username to look up.
- * @returns A promise that resolves to an object containing existence and follower since information.
- * @throws Error if the FOLLOWER_SINCE_COLLECTION environment variable is not set.
+ * Retrieves the 'follower since' timestamp for a given follower and followed user pair.
+ * @param followerUsername - The username of the follower.
+ * @param followedUsername - The username of the followed user.
+ * @returns A promise that resolves to the timestamp when the follow relationship started, or null if not found.
  */
 async function getFollowerSince(
-	username: string,
-	followedAccount: string
-): Promise<FollowerSinceResult> {
-	const doc = await checkDocumentInCollection(username, followedAccount)
+	followerUsername: string,
+	followedUsername: string
+): Promise<number | null> {
+	// Check if the follow relationship exists in the collection
+	const doc = await checkDocumentInCollection(followerUsername, followedUsername)
 
+	// If the document doesn't exist, return null
 	if (!doc) {
-		return { exists: false }
+		return null
 	}
 
-	const followerSince = doc.get('follower_since')
-
-	return { exists: true, followerSince }
+	// Return the 'follower_since' timestamp from the document
+	return doc.get('follower_since')
 }
 
 export { getFollowerSince }

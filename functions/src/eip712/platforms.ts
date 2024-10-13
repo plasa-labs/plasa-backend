@@ -1,25 +1,26 @@
 /**
- * Represents a social media platform with ownership and follower contracts.
+ * Represents a social media platform with ownership contract information.
  */
 export interface Platform {
+	/** The name of the social media platform */
 	name: string
+	/** The Ethereum address of the ownership contract for this platform */
 	ownershipContractAddress: string
-	followerSinceContractAddress: string
 }
 
 /**
- * A record of supported platforms and their contract addresses.
+ * A record of supported social media platforms and their contract addresses.
+ * This object maps platform identifiers to their respective Platform configurations.
  */
 export const platforms: Record<string, Platform> = {
 	instagram: {
 		name: 'Instagram',
-		ownershipContractAddress: '0x1234567890123456789012345678901234567890',
-		followerSinceContractAddress: '0x1234567890123456789012345678901234567890'
+		ownershipContractAddress: '0x0000000000000000000000000000000000000000'
 	} as const
 }
 
-// Export individual platforms for convenience
 /**
  * Instagram platform configuration.
+ * This constant provides easy access to the Instagram platform settings.
  */
 export const instagram = platforms.instagram
