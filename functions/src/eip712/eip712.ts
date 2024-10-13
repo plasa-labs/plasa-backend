@@ -1,8 +1,9 @@
 import { ethers } from 'ethers'
-import * as dotenv from 'dotenv'
+import { config } from 'dotenv'
 import { getDeadline } from './deadline'
 
-dotenv.config()
+// Load environment variables from .env file
+config()
 
 // Use const assertions for better type inference
 const SIGNER_PRIVATE_KEY = process.env.EIP712_SIGNER_PRIVATE_KEY as string

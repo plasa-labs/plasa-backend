@@ -1,3 +1,8 @@
+import { config } from 'dotenv'
+
+// Load environment variables from .env file
+config()
+
 /**
  * Calculates the deadline timestamp for EIP-712 signatures.
  *
