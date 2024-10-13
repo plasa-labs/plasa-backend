@@ -1,223 +1,126 @@
 import { onRequest } from 'firebase-functions/v2/https'
-import { signInstagramAccountOwnership } from './eip712/account-ownership'
-import { signInstagramFollowerSince } from './eip712/follower-since'
+import { EIP712Signer } from './eip712/eip712'
+import { spaces } from './spaces/spaces'
 import { getFollowerSince } from './database/follower-since'
+import { generateRandomString, generateRandomFollowerSince } from './utils/random'
 
-// Define the structure of the response object
-interface InstagramUserDataResponse {
-	accountOwnershipStamp?: { signature: string; deadline: number }
-	isFollower?: boolean
-	followerStamp?: { signature: string; deadline: number; followerSince: number }
+/**
+ * Interface representing the signature data for a follower.
+ */
+interface SignatureData {
+	spaceName: string // Name of the space
+	signature: string // EIP-712 signature
+	followerSince: number // Timestamp of when the user started following
+	deadline: number // Expiration timestamp for the signature
+	isReal: boolean // Indicates if the follower data is real or generated
 }
 
 /**
- * Main function to handle Instagram user data requests
- * @param request - The incoming HTTP request
- * @param response - The HTTP response object
+ * Generates a signature for a follower's data.
+ *
+ * @param signer - The EIP712Signer instance
+ * @param spaceName - Name of the space
+ * @param followedUsername - Username of the followed account
+ * @param followerUsername - Username of the follower
+ * @param followerSince - Timestamp of when the user started following
+ * @param recipient - Ethereum address of the recipient
+ * @param verifyingContract - Address of the contract that will verify the signature
+ * @param isReal - Indicates if the follower data is real or generated
+ * @returns A Promise resolving to SignatureData
  */
-export const instagramUserData = onRequest(async (request, response) => {
-	// Body parameters:
-	// - instagramUsername: string - The Instagram username of the user
-	// - userAddress: string - The Ethereum address of the user
-	// - followedAccount: string - The Instagram account to check for followers
-	const { instagramUsername, userAddress, followedAccount } = request.body
+async function generateSignature(
+	signer: EIP712Signer,
+	spaceName: string,
+	followedUsername: string,
+	followerUsername: string,
+	followerSince: number,
+	recipient: string,
+	verifyingContract: string,
+	isReal: boolean
+): Promise<SignatureData> {
+	const { signature, deadline } = await signer.signFollowerSince(
+		verifyingContract,
+		followedUsername,
+		followerUsername,
+		followerSince,
+		recipient
+	)
 
-	// Validate input parameters
-	if (!instagramUsername || !userAddress || !followedAccount) {
-		response.status(400).json({ error: 'Missing username, userAddress, or followedAccount' })
+	return {
+		spaceName,
+		signature,
+		followerSince,
+		deadline,
+		isReal
+	}
+}
+
+/**
+ * Firebase Cloud Function to generate signatures for follower data.
+ * This function handles both real Instagram usernames and generates fake data when needed.
+ */
+export const signatures = onRequest(async (request, response) => {
+	const { userAddress, instagramUsername } = request.query
+
+	// Validate userAddress
+	if (typeof userAddress !== 'string') {
+		response.status(400).send('Missing or invalid userAddress')
 		return
 	}
 
-	// Initialize response object
-	// Response format:
-	// - accountOwnershipStamp: { signature: string, deadline: number } | undefined
-	// - isFollower: boolean | undefined
-	// - followerStamp: { signature: string, deadline: number, followerSince: number } | undefined
-	const responseObject: InstagramUserDataResponse = {}
-
-	try {
-		// Sign account ownership
-		responseObject.accountOwnershipStamp = await signInstagramAccountOwnership(
-			instagramUsername,
-			userAddress
-		)
-	} catch (error) {
-		console.error('Error signing account ownership:', error)
-		response.status(500).json({ error: 'Error signing account ownership' })
+	// Validate instagramUsername if provided
+	if (instagramUsername && typeof instagramUsername !== 'string') {
+		response.status(400).send('Invalid instagramUsername')
 		return
 	}
 
-	try {
-		// Check follower status and sign if applicable
-		const followerData = await getFollowerSince(instagramUsername, followedAccount)
+	const signer = new EIP712Signer()
+	const results: SignatureData[] = []
 
-		if (followerData.exists) {
-			responseObject.isFollower = true
-			const { followerSince } = followerData
+	// Generate a single random followerUsername if instagramUsername is not provided
+	const randomFollowerUsername = instagramUsername || `fakeuser${generateRandomString(8)}`
 
-			const followerStamp = await signInstagramFollowerSince(
-				followedAccount,
-				instagramUsername,
-				followerSince as number,
-				userAddress
-			)
-			responseObject.followerStamp = {
-				signature: followerStamp.signature,
-				deadline: followerStamp.deadline,
-				followerSince: followerSince as number
+	// Process each space
+	for (const space of spaces) {
+		let followerUsername: string
+		let followerSince: number
+		let isReal: boolean
+
+		if (instagramUsername) {
+			// Use provided Instagram username
+			followerUsername = instagramUsername
+			const since = await getFollowerSince(followerUsername, space.followedUsername)
+			if (since) {
+				// Real follower data found
+				followerSince = since
+				isReal = true
+			} else {
+				// Generate fake data for non-followers
+				followerSince = generateRandomFollowerSince()
+				isReal = false
 			}
 		} else {
-			responseObject.isFollower = false
+			// Generate fake data when no Instagram username is provided
+			followerUsername = randomFollowerUsername
+			followerSince = generateRandomFollowerSince()
+			isReal = false
 		}
 
-		// Send successful response
-		response.status(200).json(responseObject)
-	} catch (error) {
-		console.error('Error checking follower status:', error)
-		response.status(500).json({ error: 'Error checking follower status' })
-	}
-})
-
-/**
- * Function to handle Instagram account ownership verification
- * @param request - The incoming HTTP request
- * @param response - The HTTP response object
- */
-export const accountOwnership = onRequest(async (request, response) => {
-	const { instagramUsername, userAddress } = request.body
-
-	// Validate input parameters
-	if (!instagramUsername || !userAddress) {
-		response.status(400).json({ error: 'Missing instagramUsername or userAddress' })
-		return
-	}
-
-	try {
-		// Sign account ownership
-		const accountOwnershipStamp = await signInstagramAccountOwnership(
-			instagramUsername,
-			userAddress
-		)
-
-		// Send successful response
-		response.status(200).json(accountOwnershipStamp)
-	} catch (error) {
-		console.error('Error signing account ownership:', error)
-		response.status(500).json({ error: 'Error signing account ownership' })
-	}
-})
-
-/**
- * Function to handle Instagram follower stamp requests
- * @param request - The incoming HTTP request
- * @param response - The HTTP response object
- */
-export const followerStamp = onRequest(async (request, response) => {
-	const { instagramUsername, userAddress, followedAccount } = request.body
-
-	// Validate input parameters
-	if (!instagramUsername || !userAddress || !followedAccount) {
-		response
-			.status(400)
-			.json({ error: 'Missing instagramUsername, userAddress, or followedAccount' })
-		return
-	}
-
-	try {
-		// Check follower status and sign if applicable
-		const followerData = await getFollowerSince(instagramUsername, followedAccount)
-
-		if (followerData.exists) {
-			const { followerSince } = followerData
-
-			const followerStamp = await signInstagramFollowerSince(
-				followedAccount,
-				instagramUsername,
-				followerSince as number,
-				userAddress
-			)
-
-			// Send successful response
-			response.status(200).json({
-				signature: followerStamp.signature,
-				deadline: followerStamp.deadline,
-				followerSince: followerSince as number
-			})
-		} else {
-			response.status(404).json({ error: 'User is not a follower' })
-		}
-	} catch (error) {
-		console.error('Error generating follower stamp:', error)
-		response.status(500).json({ error: 'Error generating follower stamp' })
-	}
-})
-
-/**
- * Represents the response structure for the follower stamp request.
- * @property followerStamp - The object containing the signature, deadline, and follower since timestamp.
- */
-interface FollowerStampResponse {
-	followerStamp: { signature: string; deadline: number; followerSince: number }
-}
-
-/**
- * Handles the request for generating a follower stamp.
- * @param request - The incoming HTTP request.
- * @param response - The HTTP response object.
- */
-export const getFollowerStamp = onRequest(async (request, response) => {
-	const { instagramUsername, userAddress } = request.body
-
-	// Validate userAddress parameter
-	if (!userAddress) {
-		response.status(400).json({ error: 'Missing userAddress' })
-		return
-	}
-
-	// Define the followed account
-	const followedAccount = 'marateasantu'
-	let followerSince: number
-
-	try {
-		// Retrieve follower data
-		const followerData = await getFollowerSince(instagramUsername, followedAccount)
-
-		// Determine follower since timestamp
-		if (followerData.exists) {
-			followerSince = followerData.followerSince as number
-		} else {
-			// If not a follower, set follower since to 10 days ago
-			followerSince = Math.floor(Date.now() / 1000) - 10 * 24 * 60 * 60
-		}
-
-		// Generate the follower stamp
-		const followerStamp = await signInstagramFollowerSince(
-			followedAccount,
-			instagramUsername,
+		// Generate signature for the current space
+		const signatureData = await generateSignature(
+			signer,
+			space.name,
+			space.followedUsername,
+			followerUsername,
 			followerSince,
-			userAddress
+			userAddress,
+			space.followerSinceStampContractAddress,
+			isReal
 		)
 
-		// Prepare the response
-		const followerStampResponse: FollowerStampResponse = {
-			followerStamp: {
-				...followerStamp,
-				followerSince
-			}
-		}
-
-		// Send successful response
-		response.status(200).json(followerStampResponse)
-	} catch (error) {
-		console.error('Error generating follower stamp:', error)
-		response.status(500).json({ error: 'Error generating follower stamp' })
+		results.push(signatureData)
 	}
+
+	// Send the results as JSON response
+	response.json(results)
 })
-
-/*
-
-
-
-
-
-*/
