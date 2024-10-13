@@ -18,7 +18,8 @@ initializeApp({
 
 const db = getFirestore()
 
-const timestamp = new Date('2024-06-12').toISOString()
+// Convert the date to a Unix timestamp (seconds since epoch)
+const timestamp = Math.floor(new Date('2024-06-12').getTime() / 1000)
 
 async function uploadFollowers() {
 	const csvFilePath = path.join(__dirname, process.env.CSV_FILE_PATH!)
