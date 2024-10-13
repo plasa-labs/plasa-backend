@@ -7,128 +7,60 @@ Using Firebase Functions and Firestore.
 - [Plasa Backend](#plasa-backend)
 	- [Table of Contents](#table-of-contents)
 	- [Firebase Functions Endpoints](#firebase-functions-endpoints)
-		- [Endpoint Name: `accountOwnership`](#endpoint-name-accountownership)
-		- [Endpoint Name: `followerStamp`](#endpoint-name-followerstamp)
+		- [Endpoint Name: `signatures`](#endpoint-name-signatures)
 	- [Firestore Collections Structure](#firestore-collections-structure)
 		- [Collection: `{followed_account}`](#collection-followed_account)
 	- [Firestore Scripts (@firestore-scripts)](#firestore-scripts-firestore-scripts)
-		- [push-followers.ts](#push-followersts)
-		- [push-followers-multiple.ts](#push-followers-multiplets)
+		- [push-followers-json.ts](#push-followers-jsonts)
+		- [push-followers-json-multifile.ts](#push-followers-json-multifilets)
+		- [push-followers-csv.ts](#push-followers-csvts)
 		- [read-collection.ts](#read-collectionts)
 
 ## Firebase Functions Endpoints
 
-### Endpoint Name: `accountOwnership`
+### Endpoint Name: `signatures`
 
--   **HTTP Method**: POST
--   **Description**: Handles Instagram account ownership verification and signs the account ownership.
+-   **HTTP Method**: GET
+-   **Description**: Generates signatures for follower data, handling both real Instagram usernames and generating fake data when needed.
 -   **Authentication**: Required (assumed, as it's a Firebase Function)
--   **Request Body**:
-    ```json
-    {
-    	"instagramUsername": "string",
-    	"userAddress": "string"
-    }
-    ```
+-   **Query Parameters**:
+    -   `userAddress` (required): Ethereum address of the user
+    -   `instagramUsername` (optional): Instagram username of the follower
 -   **Response**:
     -   Success (200 OK):
         ```json
-        {
+        [
+          {
+            "spaceName": "string",
             "signature": "string",
-            "deadline": number
-        }
-        ```
-    -   Error (400 Bad Request):
-        ```json
-        {
-        	"error": "Missing instagramUsername or userAddress"
-        }
-        ```
-    -   Error (500 Internal Server Error):
-        ```json
-        {
-        	"error": "Error signing account ownership"
-        }
-        ```
--   **Example Usage**:
-
-    ```javascript
-    const response = await fetch(
-    	'https://your-firebase-function-url/accountOwnership',
-    	{
-    		method: 'POST',
-    		headers: {
-    			'Content-Type': 'application/json'
-    		},
-    		body: JSON.stringify({
-    			instagramUsername: 'example_user',
-    			userAddress: '0x1234567890123456789012345678901234567890'
-    		})
-    	}
-    )
-
-    const data = await response.json()
-    console.log(data)
-    ```
-
-### Endpoint Name: `followerStamp`
-
--   **HTTP Method**: POST
--   **Description**: Handles Instagram follower stamp requests and verifies follower status.
--   **Authentication**: Required (assumed, as it's a Firebase Function)
--   **Request Body**:
-    ```json
-    {
-    	"instagramUsername": "string",
-    	"userAddress": "string",
-    	"followedAccount": "string"
-    }
-    ```
--   **Response**:
-    -   Success (200 OK):
-        ```json
-        {
-            "signature": "string",
+            "followerSince": number,
             "deadline": number,
-            "followerSince": number
-        }
+            "isReal": boolean
+          },
+          // ... (one object for each space)
+        ]
         ```
     -   Error (400 Bad Request):
         ```json
-        {
-        	"error": "Missing instagramUsername, userAddress, or followedAccount"
-        }
+        "Missing or invalid userAddress"
         ```
-    -   Error (404 Not Found):
+        or
         ```json
-        {
-        	"error": "User is not a follower"
-        }
-        ```
-    -   Error (500 Internal Server Error):
-        ```json
-        {
-        	"error": "Error generating follower stamp"
-        }
+        "Invalid instagramUsername"
         ```
 -   **Example Usage**:
 
     ```javascript
-    const response = await fetch(
-    	'https://your-firebase-function-url/followerStamp',
-    	{
-    		method: 'POST',
-    		headers: {
-    			'Content-Type': 'application/json'
-    		},
-    		body: JSON.stringify({
-    			instagramUsername: 'example_user',
-    			userAddress: '0x1234567890123456789012345678901234567890',
-    			followedAccount: 'followed_account'
-    		})
-    	}
-    )
+    const userAddress = '0x1234567890123456789012345678901234567890'
+    const instagramUsername = 'example_user' // Optional
 
+    const url = new URL('https://your-firebase-function-url/signatures')
+    url.searchParams.append('userAddress', userAddress)
+    if (instagramUsername) {
+    	url.searchParams.append('instagramUsername', instagramUsername)
+    }
+
+    const response = await fetch(url.toString())
     const data = await response.json()
     console.log(data)
     ```
@@ -172,21 +104,21 @@ Using Firebase Functions and Firestore.
 
 ## Firestore Scripts (@firestore-scripts)
 
-### push-followers.ts
+### push-followers-json.ts
 
--   **Description**: This script reads follower data from a JSON file and adds it to Firestore.
+-   **Description**: This script reads follower data from a single JSON file and adds it to Firestore.
 -   **Usage**:
     1. Set the required environment variables in a `.env` file:
         - `FOLLOWERS_COLLECTION_TO_PUSH`: The Firestore collection to push data to
         - `SERVICE_ACCOUNT_PATH`: Path to the Firebase service account JSON file
         - `FOLLOWERS_DATA_PATH`: Path to the JSON file containing follower data
-    2. Run the script using `ts-node push-followers.ts`
+    2. Run the script using `ts-node push-followers-json.ts`
 -   **Key Features**:
     -   Processes followers in batches of 100 for efficient Firestore writes
     -   Handles large datasets by committing in batches
     -   Logs progress and any errors encountered
 
-### push-followers-multiple.ts
+### push-followers-json-multifile.ts
 
 -   **Description**: This script processes multiple JSON files containing follower data and adds them to Firestore.
 -   **Usage**:
@@ -194,12 +126,27 @@ Using Firebase Functions and Firestore.
         - `FOLLOWERS_COLLECTION_TO_PUSH`: The Firestore collection to push data to
         - `SERVICE_ACCOUNT_PATH`: Path to the Firebase service account JSON file
         - `FOLLOWERS_FOLDER_NAME`: Name of the folder containing follower JSON files
-    2. Run the script using `ts-node push-followers-multiple.ts`
+    2. Run the script using `ts-node push-followers-json-multifile.ts`
 -   **Key Features**:
     -   Processes multiple JSON files in a specified folder
     -   Handles followers in batches of 500 for efficient Firestore writes
     -   Skips reserved usernames (starting and ending with `__`)
-    -   Provides detailed logging, including total followers added and skipped
+    -   Provides detailed logging, including total followers added and skipped for each file and grand totals
+
+### push-followers-csv.ts
+
+-   **Description**: This script reads follower data from a CSV file and adds it to Firestore.
+-   **Usage**:
+    1. Set the required environment variables in a `.env` file:
+        - `FOLLOWERS_COLLECTION_TO_PUSH`: The Firestore collection to push data to
+        - `SERVICE_ACCOUNT_PATH`: Path to the Firebase service account JSON file
+        - `CSV_FILE_PATH`: Path to the CSV file containing follower data
+    2. Run the script using `ts-node push-followers-csv.ts`
+-   **Key Features**:
+    -   Processes followers from a CSV file
+    -   Handles followers in batches of 100 for efficient Firestore writes
+    -   Uses a fixed timestamp for all followers (currently set to '2024-06-12')
+    -   Provides progress logging, including total records uploaded
 
 ### read-collection.ts
 
