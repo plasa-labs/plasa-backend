@@ -13,7 +13,7 @@ interface SignatureData {
 	followerSince: number // Timestamp of when the user started following
 	deadline: number // Expiration timestamp for the signature
 	isReal: boolean // Indicates if the follower data is real or generated
-	instagramUsername: string // Add this line
+	instagramUsername: string // Instagram username of the follower
 }
 
 /**
@@ -60,6 +60,12 @@ async function generateSignature(
 /**
  * Firebase Cloud Function to generate signatures for follower data.
  * This function handles both real Instagram usernames and generates fake data when needed.
+ *
+ * Query Parameters:
+ * - userAddress: (required) Ethereum address of the user
+ * - instagramUsername: (optional) Instagram username of the follower
+ *
+ * @returns An array of SignatureData objects for each space
  */
 export const signatures = onRequest(async (request, response) => {
 	const { userAddress, instagramUsername } = request.query
@@ -89,7 +95,7 @@ export const signatures = onRequest(async (request, response) => {
 		let isReal: boolean
 
 		if (instagramUsername) {
-			// Use provided Instagram username
+			// Use provided Instagram username and check if they're a real follower
 			followerUsername = instagramUsername
 			const since = await getFollowerSince(followerUsername, space.followedUsername)
 			if (since) {

@@ -35,7 +35,8 @@ Using Firebase Functions and Firestore.
             "signature": "string",
             "followerSince": number,
             "deadline": number,
-            "isReal": boolean
+            "isReal": boolean,
+            "instagramUsername": "string"
           },
           // ... (one object for each space)
         ]
@@ -64,6 +65,8 @@ Using Firebase Functions and Firestore.
     const data = await response.json()
     console.log(data)
     ```
+
+**Note**: If `instagramUsername` is not provided, the function will generate a single random follower username for all spaces. The `isReal` field indicates whether the follower data is real (true) or generated (false).
 
 ## Firestore Collections Structure
 
