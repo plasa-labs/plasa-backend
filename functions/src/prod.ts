@@ -13,6 +13,7 @@ interface SignatureData {
 	followerSince: number // Timestamp of when the user started following
 	deadline: number // Expiration timestamp for the signature
 	isReal: boolean // Indicates if the follower data is real or generated
+	instagramUsername: string // Add this line
 }
 
 /**
@@ -51,7 +52,8 @@ async function generateSignature(
 		signature,
 		followerSince,
 		deadline,
-		isReal
+		isReal,
+		instagramUsername: followerUsername // Add this line
 	}
 }
 
