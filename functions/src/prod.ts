@@ -151,3 +151,73 @@ export const followerStamp = onRequest(async (request, response) => {
 		response.status(500).json({ error: 'Error generating follower stamp' })
 	}
 })
+
+/**
+ * Represents the response structure for the follower stamp request.
+ * @property followerStamp - The object containing the signature, deadline, and follower since timestamp.
+ */
+interface FollowerStampResponse {
+	followerStamp: { signature: string; deadline: number; followerSince: number }
+}
+
+/**
+ * Handles the request for generating a follower stamp.
+ * @param request - The incoming HTTP request.
+ * @param response - The HTTP response object.
+ */
+export const getFollowerStamp = onRequest(async (request, response) => {
+	const { instagramUsername, userAddress } = request.body
+
+	// Validate userAddress parameter
+	if (!userAddress) {
+		response.status(400).json({ error: 'Missing userAddress' })
+		return
+	}
+
+	// Define the followed account
+	const followedAccount = 'marateasantu'
+	let followerSince: number
+
+	try {
+		// Retrieve follower data
+		const followerData = await getFollowerSince(instagramUsername, followedAccount)
+
+		// Determine follower since timestamp
+		if (followerData.exists) {
+			followerSince = followerData.followerSince as number
+		} else {
+			// If not a follower, set follower since to 10 days ago
+			followerSince = Math.floor(Date.now() / 1000) - 10 * 24 * 60 * 60
+		}
+
+		// Generate the follower stamp
+		const followerStamp = await signInstagramFollowerSince(
+			followedAccount,
+			instagramUsername,
+			followerSince,
+			userAddress
+		)
+
+		// Prepare the response
+		const followerStampResponse: FollowerStampResponse = {
+			followerStamp: {
+				...followerStamp,
+				followerSince
+			}
+		}
+
+		// Send successful response
+		response.status(200).json(followerStampResponse)
+	} catch (error) {
+		console.error('Error generating follower stamp:', error)
+		response.status(500).json({ error: 'Error generating follower stamp' })
+	}
+})
+
+/*
+
+
+
+
+
+*/
