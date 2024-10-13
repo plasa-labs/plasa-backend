@@ -69,8 +69,13 @@ async function generateSignature(
  * @returns An array of SignatureData objects for each space
  */
 const corsHandler = cors({
-	// origin: ['http://localhost:3000', 'https://your-custom-domain.com'],
-	origin: ['http://localhost:3000'],
+	origin: (origin, callback) => {
+		if (!origin || origin.startsWith('http://localhost')) {
+			callback(null, true)
+		} else {
+			callback(new Error('Not allowed by CORS'))
+		}
+	},
 	methods: ['GET'],
 	allowedHeaders: ['Content-Type', 'Authorization'],
 	credentials: true
