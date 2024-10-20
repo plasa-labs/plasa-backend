@@ -1,62 +1,13 @@
 import { onRequest } from 'firebase-functions/v2/https'
-import { EIP712Signer } from './eip712/eip712'
-import { spaces } from './spaces/spaces'
-import { getFollowerSince } from './database/follower-since'
-import { generateRandomString, generateRandomFollowerSince } from './utils/random'
 import * as cors from 'cors'
 
-/**
- * Interface representing the signature data for a follower.
- */
-interface SignatureData {
-	spaceName: string // Name of the space
-	signature: string // EIP-712 signature
-	followerSince: number // Timestamp of when the user started following
-	deadline: number // Expiration timestamp for the signature
-	isReal: boolean // Indicates if the follower data is real or generated
-	instagramUsername: string // Instagram username of the follower
-}
+import { getUserDataFromInstagram } from './instagram-data'
+import { linkInstagramToAddress } from './database/link-instagram'
+import { getLinkedInstagram } from './database/get-instagram'
 
-/**
- * Generates a signature for a follower's data.
- *
- * @param signer - The EIP712Signer instance
- * @param spaceName - Name of the space
- * @param followedUsername - Username of the followed account
- * @param followerUsername - Username of the follower
- * @param followerSince - Timestamp of when the user started following
- * @param recipient - Ethereum address of the recipient
- * @param verifyingContract - Address of the contract that will verify the signature
- * @param isReal - Indicates if the follower data is real or generated
- * @returns A Promise resolving to SignatureData
- */
-async function generateSignature(
-	signer: EIP712Signer,
-	spaceName: string,
-	followedUsername: string,
-	followerUsername: string,
-	followerSince: number,
-	recipient: string,
-	verifyingContract: string,
-	isReal: boolean
-): Promise<SignatureData> {
-	const { signature, deadline } = await signer.signFollowerSince(
-		verifyingContract,
-		followedUsername,
-		followerUsername,
-		followerSince,
-		recipient
-	)
+import { UserData } from './return-interfaces'
 
-	return {
-		spaceName,
-		signature,
-		followerSince,
-		deadline,
-		isReal,
-		instagramUsername: followerUsername // Add this line
-	}
-}
+import { ethers } from 'ethers'
 
 /**
  * Firebase Cloud Function to generate signatures for follower data.
@@ -69,82 +20,93 @@ async function generateSignature(
  * @returns An array of SignatureData objects for each space
  */
 const corsHandler = cors({
-	origin: (origin, callback) => {
-		if (!origin || origin.startsWith('http://localhost')) {
-			callback(null, true)
-		} else {
-			callback(new Error('Not allowed by CORS'))
-		}
-	},
-	methods: ['GET'],
+	origin: true, // Allow any origin
+	methods: ['GET', 'POST'],
 	allowedHeaders: ['Content-Type', 'Authorization'],
 	credentials: true
 })
 
-export const signatures = onRequest(async (request, response) => {
-	return corsHandler(request, response, async () => {
-		const { userAddress, instagramUsername } = request.query
+export const getInstagramUsername = onRequest(async (request, response) => {
+	corsHandler(request, response, async () => {
+		const { userAddress } = request.query
 
-		// Validate userAddress
-		if (typeof userAddress !== 'string') {
-			response.status(400).send('Missing or invalid userAddress')
-			return
+		if (!ethers.isAddress(userAddress as string)) {
+			throw new Error('Invalid Ethereum address')
 		}
 
-		// Validate instagramUsername if provided
-		if (instagramUsername && typeof instagramUsername !== 'string') {
-			response.status(400).send('Invalid instagramUsername')
-			return
-		}
+		const instagramUsername = await getLinkedInstagram(userAddress as string)
 
-		const signer = new EIP712Signer()
-		const results: SignatureData[] = []
+		response.json({ instagramUsername })
+	})
+})
 
-		// Generate a single random followerUsername if instagramUsername is not provided
-		const randomFollowerUsername = instagramUsername || `fakeuser${generateRandomString(8)}`
+export const getUserData = onRequest(async (request, response) => {
+	corsHandler(request, response, async () => {
+		try {
+			const { userAddress, stampAddresses } = request.query
 
-		// Process each space
-		for (const space of spaces) {
-			let followerUsername: string
-			let followerSince: number
-			let isReal: boolean
-
-			if (instagramUsername) {
-				// Use provided Instagram username and check if they're a real follower
-				followerUsername = instagramUsername
-				const since = await getFollowerSince(followerUsername, space.followedUsername)
-				if (since) {
-					// Real follower data found
-					followerSince = since
-					isReal = true
-				} else {
-					// Generate fake data for non-followers
-					followerSince = generateRandomFollowerSince()
-					isReal = false
-				}
-			} else {
-				// Generate fake data when no Instagram username is provided
-				followerUsername = randomFollowerUsername
-				followerSince = generateRandomFollowerSince()
-				isReal = false
+			if (typeof userAddress !== 'string') {
+				throw new Error('Invalid userAddress parameter')
 			}
 
-			// Generate signature for the current space
-			const signatureData = await generateSignature(
-				signer,
-				space.name,
-				space.followedUsername,
-				followerUsername,
-				followerSince,
-				userAddress,
-				space.followerSinceStampContractAddress,
-				isReal
-			)
+			if (!ethers.isAddress(userAddress)) {
+				throw new Error('Invalid Ethereum address')
+			}
 
-			results.push(signatureData)
+			let userData: UserData
+
+			let stampAddressesArray: string[] | undefined = undefined
+			if (stampAddresses) {
+				if (typeof stampAddresses === 'string') {
+					// If it's a single string, split it by comma
+					stampAddressesArray = stampAddresses.split(',')
+				} else if (Array.isArray(stampAddresses)) {
+					// If it's already an array, map each item to string
+					stampAddressesArray = stampAddresses.map(String)
+				} else {
+					throw new Error('Invalid stampAddresses parameter')
+				}
+
+				userData = await getUserDataFromInstagram(userAddress, stampAddressesArray)
+			} else {
+				userData = {
+					address: userAddress,
+					instagramUsername: await getLinkedInstagram(userAddress),
+					availableStamps: null
+				}
+			}
+
+			response.json(userData)
+		} catch (error) {
+			console.error('Error in getUserData:', error)
+			response.status(500).json({ error: 'Internal Server Error' })
 		}
+	})
+})
 
-		// Send the results as JSON response
-		response.json(results)
+export const linkInstagram = onRequest(async (request, response) => {
+	corsHandler(request, response, async () => {
+		try {
+			const { userAddress, instagramUsername } = request.body
+
+			if (typeof userAddress !== 'string' || typeof instagramUsername !== 'string') {
+				throw new Error('Invalid input parameters')
+			}
+
+			if (!ethers.isAddress(userAddress)) {
+				throw new Error('Invalid Ethereum address')
+			}
+
+			// Link Instagram to address
+			await linkInstagramToAddress(userAddress, instagramUsername)
+
+			// Get user data after linking
+			const userData = await getUserDataFromInstagram(userAddress)
+
+			response.json(userData)
+		} catch (error) {
+			console.error('Error in linkInstagram:', error)
+			response.status(500).json({ error: 'Internal Server Error' })
+		}
 	})
 })
