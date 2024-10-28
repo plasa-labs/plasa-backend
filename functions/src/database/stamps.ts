@@ -1,11 +1,6 @@
 import { getAllDocumentsInCollection } from './helper'
 
-export interface Stamp {
-	contractAddress: string
-	chainId: number
-	platform: string
-	followedAccount: string
-}
+import { Stamp } from '../return-interfaces'
 
 /**
  * Fetches all existing stamps from the "stamps" collection in Firestore.

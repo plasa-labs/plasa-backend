@@ -1,4 +1,9 @@
-import { Stamp } from './database/stamps'
+export interface Stamp {
+	contractAddress: string
+	chainId: number
+	platform: string
+	followedAccount: string
+}
 
 interface StampSignature {
 	signature: string
