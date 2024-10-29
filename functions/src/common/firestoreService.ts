@@ -60,6 +60,72 @@ class FirestoreService {
 		// Map each document to its data
 		return snapshot.docs.map((doc) => doc.data())
 	}
+
+	/**
+	 * Helper function to query documents from a specified collection where a specific field matches a given value.
+	 * @param collection - The name of the collection.
+	 * @param field - The field to query against.
+	 * @param value - The value to match.
+	 * @returns A promise that resolves to a QuerySnapshot.
+	 */
+	private async queryDocuments(
+		collection: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.QuerySnapshot> {
+		const collectionRef = db.collection(collection)
+		return await collectionRef.where(field, '==', value).get()
+	}
+
+	/**
+	 * Queries documents from a specified collection where a specific field matches a given value.
+	 * @param collection - The name of the collection.
+	 * @param field - The field to query against.
+	 * @param value - The value to match.
+	 * @returns A promise that resolves to an array of document data.
+	 */
+	async queryByField(
+		collection: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.DocumentData[] | null> {
+		const querySnapshot = await this.queryDocuments(collection, field, value)
+
+		if (querySnapshot.empty) {
+			return null
+		}
+
+		// Map each document to its data
+		return querySnapshot.docs.map((doc) => doc.data())
+	}
+
+	/**
+	 * Queries a document from a specified collection where a specific field matches a given value.
+	 * Ensures that only one document is returned.
+	 * @param collection - The name of the collection.
+	 * @param field - The field to query against.
+	 * @param value - The value to match.
+	 * @returns A promise that resolves to the document data or null if no document is found.
+	 * @throws An error if more than one document is found.
+	 */
+	async querySingleByField(
+		collection: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.DocumentData | null> {
+		const querySnapshot = await this.queryDocuments(collection, field, value)
+
+		if (querySnapshot.size > 1) {
+			throw new Error('More than one document found')
+		}
+
+		if (querySnapshot.empty) {
+			return null
+		}
+
+		// Return the single document data
+		return querySnapshot.docs[0].data()
+	}
 }
 
 export default FirestoreService
