@@ -16,14 +16,19 @@ class InstagramService extends FirestoreService {
 	 * Sets the Instagram address for a user.
 	 * @param userId - The ID of the user.
 	 * @param instagramUsername - The Instagram username to set.
-	 * @returns A promise that resolves to the updated user data.
+	 * @returns A promise that resolves to the updated user data or null if the username is not unique.
 	 */
 	async setUserInstagram(
 		userId: string,
 		instagramUsername: string
-	): Promise<FirebaseFirestore.DocumentData> {
-		// Update the user's Instagram address
-		return this.write('users', userId, { instagram: instagramUsername })
+	): Promise<FirebaseFirestore.DocumentData | null> {
+		// Ensure the Instagram username is unique before setting it
+		try {
+			return await this.setUniqueField('users', userId, 'instagram', instagramUsername)
+		} catch (error) {
+			console.error('Error setting unique Instagram username:', error)
+			return null
+		}
 	}
 }
 
