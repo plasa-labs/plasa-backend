@@ -81,4 +81,4 @@ function getDeadline(): number {
 	return currentTimestamp + Number(EIP712_DEADLINE_MINUTES) * 60
 }
 
-export { SignatureService }
+export default SignatureService
