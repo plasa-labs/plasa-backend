@@ -67,6 +67,7 @@ class FirestoreService {
 	 * @param field - The field to query against.
 	 * @param value - The value to match.
 	 * @returns A promise that resolves to a QuerySnapshot.
+	 * @private
 	 */
 	private async queryDocuments(
 		collection: string,
@@ -82,7 +83,7 @@ class FirestoreService {
 	 * @param collection - The name of the collection.
 	 * @param field - The field to query against.
 	 * @param value - The value to match.
-	 * @returns A promise that resolves to an array of document data.
+	 * @returns A promise that resolves to an array of document data or null if no documents are found.
 	 */
 	async queryByField(
 		collection: string,
@@ -125,6 +126,40 @@ class FirestoreService {
 
 		// Return the single document data
 		return querySnapshot.docs[0].data()
+	}
+
+	/**
+	 * Sets a new field in a document if it doesn't already exist and no other document has the same value for that field.
+	 * @param collection - The name of the collection.
+	 * @param docId - The ID of the document to update.
+	 * @param field - The field to set.
+	 * @param value - The value to set for the field.
+	 * @returns A promise that resolves to the updated document data or null if the operation is not possible.
+	 * @throws An error if the field already exists or another document has the same value.
+	 */
+	async setUniqueField(
+		collection: string,
+		docId: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.DocumentData | null> {
+		const docRef = db.collection(collection).doc(docId)
+		const doc = await docRef.get()
+
+		const data = doc.data()
+		if (data && field in data) {
+			throw new Error(`Field "${field}" already exists in the document`)
+		}
+
+		const querySnapshot = await this.queryDocuments(collection, field, value)
+		if (!querySnapshot.empty) {
+			throw new Error(`Another document already has the value "${value}" for field "${field}"`)
+		}
+
+		await docRef.set({ [field]: value }, { merge: true })
+		const updatedDoc = await docRef.get()
+
+		return updatedDoc.data()!
 	}
 }
 
