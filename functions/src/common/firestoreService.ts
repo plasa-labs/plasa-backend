@@ -22,6 +22,27 @@ class FirestoreService {
 	}
 
 	/**
+	 * Retrieves all documents from a specified collection.
+	 * @param collection - The name of the collection.
+	 * @returns A promise that resolves to an array of document data.
+	 * @throws An error if the collection is empty.
+	 */
+	async readAll(collection: string): Promise<FirebaseFirestore.DocumentData[]> {
+		const collectionRef = db.collection(collection)
+
+		const snapshot = await collectionRef.get()
+
+		if (snapshot.empty) {
+			throw new Error('Snapshot is empty')
+		}
+
+		// Map each document to its data
+		const data = snapshot.docs.map((doc) => doc.data())
+
+		return data
+	}
+
+	/**
 	 * Writes data to a document in a specified collection. If the document exists, it merges the data.
 	 * @param collection - The name of the collection.
 	 * @param docId - The ID of the document to write to.
@@ -42,6 +63,40 @@ class FirestoreService {
 	}
 
 	/**
+	 * Sets a new field in a document if it doesn't already exist and no other document has the same value for that field.
+	 * @param collection - The name of the collection.
+	 * @param docId - The ID of the document to update.
+	 * @param field - The field to set.
+	 * @param value - The value to set for the field.
+	 * @returns A promise that resolves to the updated document data or null if the operation is not possible.
+	 * @throws An error if the field already exists or another document has the same value.
+	 */
+	async setUniqueField(
+		collection: string,
+		docId: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.DocumentData | null> {
+		const docRef = db.collection(collection).doc(docId)
+		const doc = await docRef.get()
+
+		const data = doc.data()
+		if (data && field in data) {
+			throw new Error(`Field "${field}" already exists in the document`)
+		}
+
+		const querySnapshot = await this.queryDocuments(collection, field, value)
+		if (!querySnapshot.empty) {
+			throw new Error(`Another document already has the value "${value}" for field "${field}"`)
+		}
+
+		await docRef.set({ [field]: value }, { merge: true })
+		const updatedDoc = await docRef.get()
+
+		return updatedDoc.data()!
+	}
+
+	/**
 	 * Deletes a document from a specified collection.
 	 * @param collection - The name of the collection.
 	 * @param docId - The ID of the document to delete.
@@ -51,27 +106,6 @@ class FirestoreService {
 		const docRef = db.collection(collection).doc(docId)
 		// Delete the document
 		await docRef.delete()
-	}
-
-	/**
-	 * Retrieves all documents from a specified collection.
-	 * @param collection - The name of the collection.
-	 * @returns A promise that resolves to an array of document data.
-	 * @throws An error if the collection is empty.
-	 */
-	async getAll(collection: string): Promise<FirebaseFirestore.DocumentData[]> {
-		const collectionRef = db.collection(collection)
-
-		const snapshot = await collectionRef.get()
-
-		if (snapshot.empty) {
-			throw new Error('Snapshot is empty')
-		}
-
-		// Map each document to its data
-		const data = snapshot.docs.map((doc) => doc.data())
-
-		return data
 	}
 
 	/**
@@ -139,40 +173,6 @@ class FirestoreService {
 
 		// Return the single document data
 		return querySnapshot.docs[0].data()
-	}
-
-	/**
-	 * Sets a new field in a document if it doesn't already exist and no other document has the same value for that field.
-	 * @param collection - The name of the collection.
-	 * @param docId - The ID of the document to update.
-	 * @param field - The field to set.
-	 * @param value - The value to set for the field.
-	 * @returns A promise that resolves to the updated document data or null if the operation is not possible.
-	 * @throws An error if the field already exists or another document has the same value.
-	 */
-	async setUniqueField(
-		collection: string,
-		docId: string,
-		field: string,
-		value: unknown
-	): Promise<FirebaseFirestore.DocumentData | null> {
-		const docRef = db.collection(collection).doc(docId)
-		const doc = await docRef.get()
-
-		const data = doc.data()
-		if (data && field in data) {
-			throw new Error(`Field "${field}" already exists in the document`)
-		}
-
-		const querySnapshot = await this.queryDocuments(collection, field, value)
-		if (!querySnapshot.empty) {
-			throw new Error(`Another document already has the value "${value}" for field "${field}"`)
-		}
-
-		await docRef.set({ [field]: value }, { merge: true })
-		const updatedDoc = await docRef.get()
-
-		return updatedDoc.data()!
 	}
 
 	/**
