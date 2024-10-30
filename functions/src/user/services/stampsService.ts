@@ -19,7 +19,7 @@ class StampsSignaturesService {
 	 * @returns A promise that resolves to an array of FollowerSinceStampSignature objects.
 	 * @throws Will throw an error if the Instagram username is not provided.
 	 */
-	async getAvailableInstagramStamps(
+	async getStampsSignatures(
 		userAddress: string,
 		instagramUsername: string
 	): Promise<FollowerSinceStampSignature[]> {
@@ -27,19 +27,57 @@ class StampsSignaturesService {
 			throw new Error('Instagram username is required')
 		}
 
-		// Fetch all existing Instagram stamps
-		const stamps = await this.getAllInstagramStamps()
+		const instagramStamps = await this.getInstagramStamps()
 
 		// Check follower since data for each stamp and generate signatures
-		const availableStamps: (FollowerSinceStampSignature | null)[] = await Promise.all(
+		const signatures = await this.stampsToSignatures(
+			instagramStamps,
+			userAddress,
+			instagramUsername
+		)
+
+		// Filter out null values and return the available stamps
+		return signatures
+	}
+
+	/**
+	 * Fetches all Instagram stamps from the database.
+	 * @returns A promise that resolves to an array of FollowerSinceStamp objects.
+	 * @throws Will throw an error if no Instagram stamps are found or if there's a database error.
+	 */
+	private async getInstagramStamps(): Promise<FollowerSinceStamp[]> {
+		try {
+			const instagramStamps = await firestoreService.queryByFields('stamps', {
+				platform: 'Instagram',
+				type: 'follower-since'
+			})
+
+			if (!instagramStamps) {
+				throw new Error('No Instagram stamps found')
+			}
+
+			return instagramStamps.map((data) => data as FollowerSinceStamp)
+		} catch (error) {
+			console.error('Error fetching Instagram stamps:', error)
+			throw new Error('Failed to retrieve Instagram stamps')
+		}
+	}
+
+	private async stampsToSignatures(
+		stamps: FollowerSinceStamp[],
+		userAddress: string,
+		instagramUsername: string
+	): Promise<FollowerSinceStampSignature[]> {
+		// Check follower since data for each stamp and generate signatures
+		const signatures: FollowerSinceStampSignature[] = await Promise.all(
 			stamps.map(async (stamp) => {
 				let authentic = true
 
 				// Retrieve the 'follower since' timestamp
 				let since = await this.getFollowerSince(
 					stamp.platform,
-					stamp.followedAccount,
-					instagramUsername
+					instagramUsername,
+					stamp.followedAccount
 				)
 
 				// If no timestamp is found, generate a random one
@@ -64,32 +102,7 @@ class StampsSignaturesService {
 				}
 			})
 		)
-
-		// Filter out null values and return the available stamps
-		return availableStamps.filter((stamp) => stamp !== null) as FollowerSinceStampSignature[]
-	}
-
-	/**
-	 * Fetches all Instagram stamps from the database.
-	 * @returns A promise that resolves to an array of FollowerSinceStamp objects.
-	 * @throws Will throw an error if no Instagram stamps are found or if there's a database error.
-	 */
-	private async getAllInstagramStamps(): Promise<FollowerSinceStamp[]> {
-		try {
-			// Query Firestore for documents where the platform is 'instagram'
-			const stampsData = await firestoreService.queryByField(
-				'follower-since-stamps',
-				'platform',
-				'instagram'
-			)
-			if (!stampsData) {
-				throw new Error('No Instagram stamps found')
-			}
-			return stampsData.map((data) => data as FollowerSinceStamp)
-		} catch (error) {
-			console.error('Error fetching Instagram stamps:', error)
-			throw new Error('Failed to retrieve Instagram stamps')
-		}
+		return signatures
 	}
 
 	/**
@@ -104,12 +117,9 @@ class StampsSignaturesService {
 		followerAccount: string,
 		followedAccount: string
 	): Promise<number | null> {
-		const collectionName = `${platform}-${followedAccount}`
-		const documentData = await firestoreService.querySingleByField(
-			collectionName,
-			'followerAccount',
-			followerAccount
-		)
+		// const collectionName = `${platform}-${followedAccount}`
+		const collectionName = followedAccount
+		const documentData = await firestoreService.read(collectionName, followerAccount)
 
 		// Return the 'follower since' timestamp if available
 		return documentData ? documentData.follower_since || null : null
