@@ -169,6 +169,33 @@ class FirestoreService {
 
 		return updatedDoc.data()!
 	}
+
+	/**
+	 * Queries documents from a specified collection where multiple fields match given values.
+	 * @param collection - The name of the collection.
+	 * @param fieldValues - An object where keys are field names and values are the values to match.
+	 * @returns A promise that resolves to an array of document data or null if no documents are found.
+	 */
+	async queryByFields(
+		collection: string,
+		fieldValues: Record<string, unknown>
+	): Promise<FirebaseFirestore.DocumentData[] | null> {
+		let query: FirebaseFirestore.Query = db.collection(collection)
+
+		// Build the query with multiple field-value pairs
+		for (const [field, value] of Object.entries(fieldValues)) {
+			query = query.where(field, '==', value)
+		}
+
+		const querySnapshot = await query.get()
+
+		if (querySnapshot.empty) {
+			return null
+		}
+
+		// Map each document to its data
+		return querySnapshot.docs.map((doc) => doc.data())
+	}
 }
 
 export default FirestoreService
