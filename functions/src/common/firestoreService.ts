@@ -2,6 +2,10 @@ import { getFirestore } from 'firebase-admin/firestore'
 
 const db = getFirestore()
 
+/**
+ * FirestoreService provides methods to interact with Firestore database.
+ * It includes operations for reading, writing, deleting, and querying documents.
+ */
 class FirestoreService {
 	/**
 	 * Reads a document from a specified collection.
@@ -53,6 +57,7 @@ class FirestoreService {
 	 * Retrieves all documents from a specified collection.
 	 * @param collection - The name of the collection.
 	 * @returns A promise that resolves to an array of document data.
+	 * @throws An error if the collection is empty.
 	 */
 	async getAll(collection: string): Promise<FirebaseFirestore.DocumentData[]> {
 		const collectionRef = db.collection(collection)
