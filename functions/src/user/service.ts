@@ -27,7 +27,7 @@ class UserService {
 	async setUserInstagram(userId: string, instagramUsername: string): Promise<UserFullData | null> {
 		await this.instagramService.setUserInstagram(userId, instagramUsername)
 
-		const availableStamps = await this.stampsSignaturesService.getAvailableInstagramStamps(
+		const availableStamps = await this.stampsSignaturesService.getStampsSignatures(
 			userId,
 			instagramUsername
 		)
@@ -51,10 +51,7 @@ class UserService {
 
 		// Check if Instagram is available and fetch stamps if so
 		if (instagram) {
-			availableStamps = await this.stampsSignaturesService.getAvailableInstagramStamps(
-				userId,
-				instagram
-			)
+			availableStamps = await this.stampsSignaturesService.getStampsSignatures(userId, instagram)
 		}
 
 		return {
