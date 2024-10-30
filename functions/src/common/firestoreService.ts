@@ -56,9 +56,17 @@ class FirestoreService {
 	 */
 	async getAll(collection: string): Promise<FirebaseFirestore.DocumentData[]> {
 		const collectionRef = db.collection(collection)
+
 		const snapshot = await collectionRef.get()
+
+		if (snapshot.empty) {
+			throw new Error('Snapshot is empty')
+		}
+
 		// Map each document to its data
-		return snapshot.docs.map((doc) => doc.data())
+		const data = snapshot.docs.map((doc) => doc.data())
+
+		return data
 	}
 
 	/**
