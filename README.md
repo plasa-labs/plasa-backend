@@ -7,7 +7,9 @@ Using Firebase Functions and Firestore.
 - [Plasa Backend](#plasa-backend)
 	- [Table of Contents](#table-of-contents)
 	- [Firebase Functions Endpoints](#firebase-functions-endpoints)
-		- [Endpoint Name: `signatures`](#endpoint-name-signatures)
+		- [Endpoint Name: `/`](#endpoint-name-)
+		- [Endpoint Name: `/user/:id`](#endpoint-name-userid)
+		- [Endpoint Name: `/user/:id/instagram`](#endpoint-name-useridinstagram)
 	- [Firestore Collections Structure](#firestore-collections-structure)
 		- [Collection: `{followed_account}`](#collection-followed_account)
 	- [Firestore Scripts (@firestore-scripts)](#firestore-scripts-firestore-scripts)
@@ -18,55 +20,66 @@ Using Firebase Functions and Firestore.
 
 ## Firebase Functions Endpoints
 
-### Endpoint Name: `signatures`
+### Endpoint Name: `/`
 
 -   **HTTP Method**: GET
--   **Description**: Generates signatures for follower data, handling both real Instagram usernames and generating fake data when needed.
--   **Authentication**: Required (assumed, as it's a Firebase Function)
--   **Query Parameters**:
-    -   `userAddress` (required): Ethereum address of the user
-    -   `instagramUsername` (optional): Instagram username of the follower
+-   **Description**: Returns a simple greeting message.
 -   **Response**:
     -   Success (200 OK):
         ```json
-        [
-          {
-            "spaceName": "string",
-            "signature": "string",
-            "followerSince": number,
-            "deadline": number,
-            "isReal": boolean,
-            "instagramUsername": "string"
-          },
-          // ... (one object for each space)
-        ]
+        "Hello!"
+        ```
+
+### Endpoint Name: `/user/:id`
+
+-   **HTTP Method**: GET
+-   **Description**: Retrieves full data for a user by ID.
+-   **Query Parameters**:
+    -   `id` (required): The ID of the user.
+-   **Response**:
+    -   Success (200 OK):
+        ```json
+        {
+        	// User full data object
+        }
         ```
     -   Error (400 Bad Request):
         ```json
-        "Missing or invalid userAddress"
+        "User ID is required"
+        ```
+    -   Error (500 Internal Server Error):
+        ```json
+        "Failed to retrieve user data"
+        ```
+
+### Endpoint Name: `/user/:id/instagram`
+
+-   **HTTP Method**: GET
+-   **Description**: Sets the Instagram username for a user.
+-   **Query Parameters**:
+    -   `id` (required): The ID of the user.
+    -   `username` (required): The Instagram username to set.
+-   **Response**:
+    -   Success (200 OK):
+        ```json
+        {
+        	// Updated user full data object
+        }
+        ```
+    -   Error (400 Bad Request):
+        ```json
+        "User ID is required"
         ```
         or
         ```json
-        "Invalid instagramUsername"
+        "Instagram username is required"
         ```
--   **Example Usage**:
+    -   Error (500 Internal Server Error):
+        ```json
+        "Failed to set Instagram username"
+        ```
 
-    ```javascript
-    const userAddress = '0x1234567890123456789012345678901234567890'
-    const instagramUsername = 'example_user' // Optional
-
-    const url = new URL('https://your-firebase-function-url/signatures')
-    url.searchParams.append('userAddress', userAddress)
-    if (instagramUsername) {
-    	url.searchParams.append('instagramUsername', instagramUsername)
-    }
-
-    const response = await fetch(url.toString())
-    const data = await response.json()
-    console.log(data)
-    ```
-
-**Note**: If `instagramUsername` is not provided, the function will generate a single random follower username for all spaces. The `isReal` field indicates whether the follower data is real (true) or generated (false).
+**Note**: Ensure that the `id` and `username` parameters are provided correctly to avoid errors.
 
 ## Firestore Collections Structure
 
