@@ -1,49 +1,48 @@
-import { Hono, Context } from 'hono'
+import express from 'express'
 import UserService from './service'
 import { UserFullData } from './model'
 
+const userRouter = express.Router()
 const userService = new UserService()
 
 /**
  * Retrieves full data for a user.
- * @param ctx - The context object containing the request and response.
  */
-export async function getUserFullData(ctx: Context) {
+export async function getUserFullData(req: express.Request, res: express.Response) {
 	console.log('getUserFullData')
 	try {
-		const userId = ctx.req.param('id')
+		const userId = req.params.id
 		console.log('userId', userId)
 
 		const userFullData: UserFullData = await userService.getUserFullData(userId)
 		console.log(userFullData)
 
-		return ctx.json(userFullData)
+		return res.json(userFullData)
 	} catch (error) {
 		console.error(error)
-		return ctx.json({ message: 'Failed to retrieve user data', error }, 500)
+		return res.status(500).json({ message: 'Failed to retrieve user data', error })
 	}
 }
 
 /**
  * Sets the Instagram username for a user.
- * @param ctx - The context object containing the request and response.
  */
-export async function setUserInstagram(ctx: Context) {
+export async function setUserInstagram(req: express.Request, res: express.Response) {
 	try {
 		console.log('setUserInstagram')
 
-		const userId = ctx.req.param('id')
+		const userId = req.params.id
 		console.log('userId', userId)
 
 		if (!userId) {
-			return ctx.json({ message: 'User ID is required' }, 400)
+			return res.status(400).json({ message: 'User ID is required' })
 		}
 
-		const username = ctx.req.query('username')
+		const username = req.query.username as string
 		console.log('username', username)
 
 		if (!username) {
-			return ctx.json({ message: 'Instagram username is required' }, 400)
+			return res.status(400).json({ message: 'Instagram username is required' })
 		}
 
 		const updatedUserFullData: UserFullData | null = await userService.setUserInstagram(
@@ -52,15 +51,14 @@ export async function setUserInstagram(ctx: Context) {
 		)
 
 		console.log(updatedUserFullData)
-		return ctx.json(updatedUserFullData)
+		return res.json(updatedUserFullData)
 	} catch (error) {
 		console.error(error)
-		return ctx.json({ message: 'Failed to set Instagram username', error }, 500)
+		return res.status(500).json({ message: 'Failed to set Instagram username', error })
 	}
 }
 
-const userRouter = new Hono()
-
+// Route definitions using the controller functions
 userRouter.get('/:id', getUserFullData)
 userRouter.get('/:id/instagram', setUserInstagram)
 
