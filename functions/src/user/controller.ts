@@ -38,7 +38,7 @@ export async function setUserInstagram(req: express.Request, res: express.Respon
 			return res.status(400).json({ message: 'User ID is required' })
 		}
 
-		const username = req.query.username as string
+		const { username } = req.body
 		console.log('username', username)
 
 		if (!username) {
@@ -60,6 +60,6 @@ export async function setUserInstagram(req: express.Request, res: express.Respon
 
 // Route definitions using the controller functions
 userRouter.get('/:id', getUserFullData)
-userRouter.get('/:id/instagram', setUserInstagram)
+userRouter.post('/:id/instagram', setUserInstagram)
 
 export default userRouter
