@@ -15,19 +15,19 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// Add proper error handling middleware with all 4 parameters
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-	console.error('Error occurred:', err)
-	res.status(500).json({ message: 'Internal Server Error', error: err.message })
-})
-
 app.get('/', (req, res) => res.send('Hello!'))
 
 app.use('/user', userRouter)
 
 app.use((req: express.Request, res: express.Response) => {
 	res.status(404).json({ message: 'Not Found' })
+})
+
+// Add proper error handling middleware with all 4 parameters
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+	console.error('Error occurred:', err)
+	res.status(500).json({ message: 'Internal Server Error', error: err.message })
 })
 
 /** Export the API for Firebase Functions */
