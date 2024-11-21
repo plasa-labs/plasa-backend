@@ -63,6 +63,21 @@ class FirestoreService {
 	}
 
 	/**
+	 * Writes a new document to a specified collection.
+	 * @param collection - The name of the collection.
+	 * @param data - The data to write to the document.
+	 * @returns A promise that resolves to the new document data.
+	 */
+	async writeNew(
+		collection: string,
+		data: FirebaseFirestore.DocumentData
+	): Promise<FirebaseFirestore.DocumentData> {
+		const docRef = db.collection(collection).doc()
+		await docRef.set(data)
+		return docRef.get().then((doc) => doc.data()!)
+	}
+
+	/**
 	 * Sets a new field in a document if it doesn't already exist and no other document has the same value for that field.
 	 * @param collection - The name of the collection.
 	 * @param docId - The ID of the document to update.
