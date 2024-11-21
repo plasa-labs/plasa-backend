@@ -44,7 +44,7 @@ export interface FirestoreInstagramUserData {
 
 export interface FirestoreInstagramCode {
 	code: number
-	created_at: string
+	created_at: number
 	instagram_id: number
 	instagram_data: FirestoreInstagramUserData
 }
