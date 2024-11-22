@@ -1,7 +1,7 @@
 import InstagramService from './services/instagramService'
 import StampsSignaturesService from './services/stampsService'
 
-import { FollowerSinceStampSignature, UserFullData } from './model'
+import { FollowerSinceStampSignature, UserResponse } from './model'
 
 /**
  * Service class for managing user-related operations.
@@ -24,7 +24,7 @@ class UserService {
 	 * @param instagramUsername - The Instagram username to set.
 	 * @returns A promise that resolves to the updated user data.
 	 */
-	async setUserInstagram(userId: string, instagramUsername: string): Promise<UserFullData | null> {
+	async setUserInstagram(userId: string, instagramUsername: string): Promise<UserResponse | null> {
 		await this.instagramService.setUserInstagram(userId, instagramUsername)
 
 		const availableStamps = await this.stampsSignaturesService.getStampsSignatures(
@@ -33,7 +33,7 @@ class UserService {
 		)
 
 		return {
-			instagram: instagramUsername,
+			instagram_username: instagramUsername,
 			address: userId,
 			availableStamps
 		}
@@ -44,7 +44,7 @@ class UserService {
 	 * @param userId - The ID of the user.
 	 * @returns A promise that resolves to the user's full data.
 	 */
-	async getUserFullData(userId: string): Promise<UserFullData> {
+	async getUserFullData(userId: string): Promise<UserResponse> {
 		const instagram = await this.instagramService.getUserInstagram(userId)
 
 		let availableStamps: FollowerSinceStampSignature[] | null = null
@@ -55,7 +55,7 @@ class UserService {
 		}
 
 		return {
-			instagram,
+			instagram_username: instagram,
 			address: userId,
 			availableStamps
 		}

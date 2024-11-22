@@ -1,6 +1,6 @@
 import express from 'express'
 import UserService from './service'
-import { UserFullData } from './model'
+import { UserResponse } from './model'
 
 const userRouter = express.Router()
 const userService = new UserService()
@@ -14,7 +14,7 @@ export async function getUserFullData(req: express.Request, res: express.Respons
 		const userId = req.params.id
 		console.log('userId', userId)
 
-		const userFullData: UserFullData = await userService.getUserFullData(userId)
+		const userFullData: UserResponse = await userService.getUserFullData(userId)
 		console.log(userFullData)
 
 		return res.json(userFullData)
@@ -45,7 +45,7 @@ export async function setUserInstagram(req: express.Request, res: express.Respon
 			return res.status(400).json({ message: 'Instagram username is required' })
 		}
 
-		const updatedUserFullData: UserFullData | null = await userService.setUserInstagram(
+		const updatedUserFullData: UserResponse | null = await userService.setUserInstagram(
 			userId,
 			username
 		)
