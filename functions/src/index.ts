@@ -13,8 +13,21 @@ import instagramCodesRouter from './instagram-codes/controller'
 const app = express()
 
 /** Middleware to apply CORS headers */
-app.use(cors())
-app.use(express.json())
+app.use(
+	cors({
+		origin:
+			process.env.NODE_ENV === 'production'
+				? ['https://plasa.vercel.app', 'https://alpha.ddfundacion.org'] // Specify allowed domains in production
+				: true, // Allow all origins in development
+		methods: ['GET', 'POST'],
+		credentials: true,
+		optionsSuccessStatus: 204
+	})
+)
+
+// Add request size limits
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 app.get('/', (req, res) => res.send('Hello!'))
 
@@ -25,12 +38,24 @@ app.use((req: express.Request, res: express.Response) => {
 	res.status(404).json({ message: 'Not Found' })
 })
 
-// Add proper error handling middleware with all 4 parameters
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-	console.error('Error occurred:', err)
-	res.status(500).json({ message: 'Internal Server Error', error: err.message })
-})
+// Improve error handling with proper typing
+interface ApiError extends Error {
+	status?: number
+	code?: string
+}
+
+app.use(
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	(err: ApiError, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+		console.error('Error occurred:', err)
+		const statusCode = err.status || 500
+		res.status(statusCode).json({
+			message: err.message || 'Internal Server Error',
+			code: err.code,
+			...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+		})
+	}
+)
 
 /** Export the API for Firebase Functions */
 export const api = onRequest(app)
