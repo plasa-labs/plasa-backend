@@ -101,6 +101,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 		const newCodeData: FirestoreInstagramCode = {
 			code,
 			created_at: Date.now(),
+			used: false,
 			instagram_id: instagramData.id,
 			instagram_data: instagramData
 		}
