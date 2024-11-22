@@ -8,12 +8,28 @@ import {
 
 import { FirestoreInstagramUserData } from '../user/model'
 
+/**
+ * Service class for managing Instagram verification codes.
+ * Handles code generation, validation, and user registration status.
+ */
 class InstagramCodesService extends FirestoreService {
 	private readonly CODES_COLLECTION_NAME = 'instagram-codes'
 	private readonly USER_DATA_COLLECTION_NAME = 'users'
 
 	private readonly CODE_VALIDITY = 10 * 60 * 1000 // minutes -> milliseconds
 
+	/**
+	 * Handles an Instagram user from ManyChat and manages their verification code.
+	 *
+	 * @param manyChatData - User data received from ManyChat
+	 * @returns Promise containing the code status and details
+	 *
+	 * Possible status responses:
+	 * - ALREADY_REGISTERED: User's Instagram ID is already registered
+	 * - ACTIVE_CODE_EXISTS: User has a valid code that hasn't expired
+	 * - CODE_RENEWED: User had expired codes and received a new one
+	 * - FIRST_CODE: User received their first verification code
+	 */
 	async handleManyChatInstagramUser(
 		manyChatData: ManyChatInstagramUser
 	): Promise<ManyChatInstagramCodeResponse> {
@@ -102,17 +118,18 @@ class InstagramCodesService extends FirestoreService {
 	}
 
 	/**
-	 * Generates a random 6-digit code.
-	 * @returns A random 6-digit code.
+	 * Generates a random 6-digit code between 100000 and 999999.
+	 * Used for creating unique verification codes for users.
 	 */
 	private readonly getRandomCode = (): number => {
 		return Math.floor(100000 + Math.random() * 900000)
 	}
 
 	/**
-	 * Generates a random code that is guaranteed to be usable.
-	 * Will keep generating new codes until a usable one is found.
-	 * @returns A promise that resolves to a usable code number
+	 * Attempts to generate a unique, unused verification code.
+	 * Keeps generating new codes until finding one that isn't currently active.
+	 *
+	 * @returns Promise resolving to a unique, usable verification code
 	 */
 	private async getUsableCode(): Promise<number> {
 		let code: number
@@ -126,6 +143,13 @@ class InstagramCodesService extends FirestoreService {
 		return code
 	}
 
+	/**
+	 * Checks if a specific code number can be used for a new verification.
+	 * A code can be used if it either doesn't exist or all existing instances have expired.
+	 *
+	 * @param code - The numeric code to check
+	 * @returns Promise resolving to true if the code can be used, false otherwise
+	 */
 	private async canCodeBeUsed(code: number): Promise<boolean> {
 		// Query all instances of this code
 		const existingCodes = await this.queryByField(this.CODES_COLLECTION_NAME, 'code', code)
