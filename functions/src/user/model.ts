@@ -31,11 +31,26 @@ export interface FollowerSinceStampSignature {
 /**
  * Represents the full data of a user, including optional social media and stamps.
  */
-export interface UserFullData {
+export interface UserResponse {
 	/** The user's blockchain address. */
 	address: string
 	/** The user's Instagram handle, if available. */
-	instagram?: string | null
+	instagram_username: string | null
 	/** A list of available follower stamps, if any. */
 	availableStamps?: FollowerSinceStampSignature[] | null
+}
+
+export interface FirestoreInstagramUserData {
+	id: number
+	username: string
+	name: string
+	first_name: string
+	last_name: string
+	profile_pic: string
+}
+
+export interface FirestoreUser {
+	address: string
+	instagram_id: number
+	instagram_data: FirestoreInstagramUserData
 }
