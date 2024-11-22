@@ -1,7 +1,12 @@
 import express from 'express'
 import InstagramCodesGenerationService from './services/generationService'
 import InstagramCodesVerificationService from './services/verificationService'
-import { ManyChatInstagramUser, InstagramCodeVerificationBody } from './model'
+import UserService from '../user/service'
+import {
+	ManyChatInstagramRequest,
+	InstagramCodeVerificationRequest,
+	InstagramCodeVerificationStatus
+} from './model'
 
 /**
  * Express Router for handling Instagram verification code endpoints
@@ -13,6 +18,7 @@ const instagramCodesRouter = express.Router()
  */
 const instagramCodesGenerationService = new InstagramCodesGenerationService()
 const instagramCodesVerificationService = new InstagramCodesVerificationService()
+const userService = new UserService()
 
 /**
  * Middleware to validate the ManyChat API key.
@@ -64,7 +70,7 @@ export async function getInstagramCode(
 	res: express.Response
 ): Promise<express.Response> {
 	try {
-		const manyChatData = req.body as ManyChatInstagramUser
+		const manyChatData = req.body as ManyChatInstagramRequest
 
 		if (!manyChatData || !manyChatData.ig_id) {
 			return res.status(400).json({ message: 'Invalid request data' })
@@ -92,7 +98,7 @@ export async function verifyInstagramCode(
 	res: express.Response
 ): Promise<express.Response> {
 	try {
-		const verificationData = req.body as InstagramCodeVerificationBody
+		const verificationData = req.body as InstagramCodeVerificationRequest
 
 		// Add input validation
 		if (!verificationData || !verificationData.code || !verificationData.user_id) {
@@ -102,8 +108,20 @@ export async function verifyInstagramCode(
 		const code = verificationData.code as number
 		const userId = verificationData.user_id as string
 
-		const response = await instagramCodesVerificationService.verifyCode(userId, code)
-		return res.json(response)
+		const verificationResult = await instagramCodesVerificationService.verifyCode(userId, code)
+
+		if (verificationResult === InstagramCodeVerificationStatus.SUCCESS) {
+			const updatedUserData = await userService.getUserData(userId)
+
+			return res.json({
+				status: verificationResult,
+				user_data: updatedUserData
+			})
+		}
+
+		return res.json({
+			status: verificationResult
+		})
 	} catch (error) {
 		console.error('Error in verifyInstagramCode:', error)
 		return res.status(500).json({ message: 'Failed to process Instagram code verification', error })
@@ -119,6 +137,6 @@ export async function verifyInstagramCode(
  * - POST /verify: Verify provided Instagram codes
  */
 instagramCodesRouter.post('/code', validateManyChatToken, getInstagramCode)
-instagramCodesRouter.post('/verify', validateManyChatToken, verifyInstagramCode)
+instagramCodesRouter.post('/verify', verifyInstagramCode)
 
 export default instagramCodesRouter
