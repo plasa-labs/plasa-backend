@@ -4,23 +4,26 @@ Using Firebase Functions and Firestore.
 
 ## Table of Contents
 
-- [Plasa Backend](#plasa-backend)
-	- [Table of Contents](#table-of-contents)
-	- [Firebase Functions Endpoints](#firebase-functions-endpoints)
-		- [Endpoint Name: `/`](#endpoint-name-)
-		- [Endpoint Name: `/user/:id`](#endpoint-name-userid)
-		- [Endpoint Name: `/user/:id/instagram`](#endpoint-name-useridinstagram)
-	- [Firestore Collections Structure](#firestore-collections-structure)
-		- [Collection: `{followed_account}`](#collection-followed_account)
-	- [Firestore Scripts (@firestore-scripts)](#firestore-scripts-firestore-scripts)
-		- [push-followers-json.ts](#push-followers-jsonts)
-		- [push-followers-json-multifile.ts](#push-followers-json-multifilets)
-		- [push-followers-csv.ts](#push-followers-csvts)
-		- [read-collection.ts](#read-collectionts)
+-   [Plasa Backend](#plasa-backend)
+    -   [Table of Contents](#table-of-contents)
+    -   [Firebase Functions Endpoints](#firebase-functions-endpoints)
+        -   [Endpoint: `/`](#endpoint-)
+        -   [Endpoint: `/user/:id`](#endpoint-userid)
+        -   [Endpoint: `/instagram/code`](#endpoint-instagramcode)
+        -   [Endpoint: `/instagram/verify`](#endpoint-instagramverify)
+    -   [Firestore Collections Structure](#firestore-collections-structure)
+        -   [Collection: `users`](#collection-users)
+        -   [Collection: `instagram-codes`](#collection-instagram-codes)
+        -   [Collection: `{followed_account}`](#collection-followed_account)
+    -   [Firestore Scripts](#firestore-scripts)
+        -   [push-followers-json.ts](#push-followers-jsonts)
+        -   [push-followers-json-multifile.ts](#push-followers-json-multifilets)
+        -   [push-followers-csv.ts](#push-followers-csvts)
+        -   [read-collection.ts](#read-collectionts)
 
 ## Firebase Functions Endpoints
 
-### Endpoint Name: `/`
+### Endpoint: `/`
 
 -   **HTTP Method**: GET
 -   **Description**: Returns a simple greeting message.
@@ -30,58 +33,194 @@ Using Firebase Functions and Firestore.
         "Hello!"
         ```
 
-### Endpoint Name: `/user/:id`
+### Endpoint: `/user/:id`
 
 -   **HTTP Method**: GET
--   **Description**: Retrieves full data for a user by ID.
--   **Query Parameters**:
-    -   `id` (required): The ID of the user.
+-   **Description**: Retrieves full data for a user by ID, including Instagram data and available stamps.
+-   **Parameters**:
+    -   `id` (required): The user's ID
 -   **Response**:
     -   Success (200 OK):
         ```json
         {
-        	// User full data object
+        	"user_id": "string",
+        	"instagram_username": "string | null",
+        	"available_stamps": [
+        		{
+        			"signature": "string",
+        			"deadline": "number",
+        			"since": "number",
+        			"stamp": {
+        				"contractAddress": "string",
+        				"chainId": "number",
+        				"platform": "string",
+        				"followedAccount": "string"
+        			},
+        			"authentic": "boolean"
+        		}
+        	] | null
         }
-        ```
-    -   Error (400 Bad Request):
-        ```json
-        "User ID is required"
         ```
     -   Error (500 Internal Server Error):
         ```json
-        "Failed to retrieve user data"
+        {
+        	"message": "Failed to retrieve user data",
+        	"error": "error details"
+        }
         ```
 
-### Endpoint Name: `/user/:id/instagram`
+### Endpoint: `/instagram/code`
 
--   **HTTP Method**: GET
--   **Description**: Sets the Instagram username for a user.
--   **Query Parameters**:
-    -   `id` (required): The ID of the user.
-    -   `username` (required): The Instagram username to set.
+-   **HTTP Method**: POST
+-   **Description**: Generates an Instagram verification code for ManyChat users.
+-   **Headers**:
+    -   `x-manychat-token` (required): ManyChat API token for authentication
+-   **Request Body**: ManyChat Instagram user data
 -   **Response**:
     -   Success (200 OK):
         ```json
         {
-        	// Updated user full data object
+        	"version": "v2",
+        	"content": {
+        		"type": "instagram",
+        		"messages": [
+        			{
+        				"type": "text",
+        				"text": "string"
+        			}
+        		]
+        	}
+        }
+        ```
+    -   Error (401 Unauthorized):
+        ```json
+        {
+        	"message": "Invalid ManyChat token"
+        }
+        ```
+
+### Endpoint: `/instagram/verify`
+
+-   **HTTP Method**: POST
+-   **Description**: Verifies an Instagram code and links the Instagram account to a user.
+-   **Request Body**:
+    ```json
+    {
+    	"code": "number",
+    	"user_id": "string"
+    }
+    ```
+-   **Response**:
+    -   Success (200 OK):
+        ```json
+        {
+        	"status": "string",
+        	"user_data": "UserResponse"
         }
         ```
     -   Error (400 Bad Request):
         ```json
-        "User ID is required"
+        {
+        	"message": "Invalid verification data"
+        }
         ```
-        or
-        ```json
-        "Instagram username is required"
-        ```
-    -   Error (500 Internal Server Error):
-        ```json
-        "Failed to set Instagram username"
-        ```
-
-**Note**: Ensure that the `id` and `username` parameters are provided correctly to avoid errors.
 
 ## Firestore Collections Structure
+
+### Collection: `users`
+
+-   **Description**: Stores user data.
+-   **Document Structure**:
+    ```json
+    {
+    	"user_id": "string",
+    	"instagram_username": "string | null",
+    	"available_stamps": [
+    		{
+    			"signature": "string",
+    			"deadline": "number",
+    			"since": "number",
+    			"stamp": {
+    				"contractAddress": "string",
+    				"chainId": "number",
+    				"platform": "string",
+    				"followedAccount": "string"
+    			},
+    			"authentic": "boolean"
+    		}
+    	] | null
+    }
+    ```
+-   **Document ID**: The document ID is the user's ID.
+-   **Usage Examples**:
+
+    ```javascript
+    // Reading user data
+    const userId = 'example_user'
+    const docRef = db.collection('users').doc(userId)
+    const doc = await docRef.get()
+    if (doc.exists) {
+    	console.log('User data:', doc.data())
+    } else {
+    	console.log('User not found')
+    }
+
+    // Writing user data (should be done through Firebase Functions)
+    const userId = 'example_user'
+    const userData = {
+    	user_id: userId,
+    	instagram_username: 'example_instagram',
+    	available_stamps: [
+    		{
+    			signature: 'example_signature',
+    			deadline: 1700000000,
+    			since: 1600000000,
+    			stamp: {
+    				contractAddress: 'example_contractAddress',
+    				chainId: 1,
+    				platform: 'example_platform',
+    				followedAccount: 'example_followedAccount'
+    			},
+    			authentic: true
+    		}
+    	]
+    }
+    await db.collection('users').doc(userId).set(userData)
+    ```
+
+### Collection: `instagram-codes`
+
+-   **Description**: Stores Instagram verification codes.
+-   **Document Structure**:
+    ```json
+    {
+    	"code": "number",
+    	"user_id": "string"
+    }
+    ```
+-   **Document ID**: The document ID is the code.
+-   **Usage Examples**:
+
+    ```javascript
+    // Reading Instagram code
+    const code = 'example_code'
+    const docRef = db.collection('instagram-codes').doc(code)
+    const doc = await docRef.get()
+    if (doc.exists) {
+    	console.log('Instagram code:', doc.data())
+    } else {
+    	console.log('Instagram code not found')
+    }
+
+    // Writing Instagram code (should be done through Firebase Functions)
+    const code = 'example_code'
+    const userId = 'example_user'
+    const codeData = {
+    	code: code,
+    	user_id: userId
+    }
+    await db.collection('instagram-codes').doc(code).set(codeData)
+    ```
 
 ### Collection: `{followed_account}`
 
@@ -118,7 +257,7 @@ Using Firebase Functions and Firestore.
     await db.collection(followedAccount).doc(followerUsername).set(followerData)
     ```
 
-## Firestore Scripts (@firestore-scripts)
+## Firestore Scripts
 
 ### push-followers-json.ts
 
