@@ -9,7 +9,7 @@ class InstagramService extends FirestoreService {
 	async getUserInstagram(userId: string): Promise<string | null> {
 		const userData = await this.read('users', userId)
 		// Return the Instagram address if it exists, otherwise return null
-		return userData?.instagram || null
+		return userData?.instagram_data?.username || null
 	}
 
 	/**
