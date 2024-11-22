@@ -82,3 +82,8 @@ export interface CodeVerificationResult {
 	instagramId?: number
 	userId?: string
 }
+
+export interface InstagramCodeVerificationBody {
+	code: number
+	user_id: string
+}
