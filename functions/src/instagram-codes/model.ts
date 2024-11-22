@@ -1,3 +1,5 @@
+import { FirestoreInstagramUserData } from '../user/model'
+
 export interface ManyChatInstagramUser {
 	key: string
 	id: string
@@ -33,18 +35,22 @@ export interface ManyChatInstagramUser {
 	custom_fields: Record<string, unknown>
 }
 
-export interface FirestoreInstagramUserData {
-	id: number
-	username: string
-	name: string
-	first_name: string
-	last_name: string
-	profile_pic: string
-}
-
 export interface FirestoreInstagramCode {
 	code: number
 	created_at: number
 	instagram_id: number
 	instagram_data: FirestoreInstagramUserData
+}
+
+export enum InstagramCodeStatus {
+	ALREADY_REGISTERED = 'ALREADY_REGISTERED', // User's Instagram ID is already in the system
+	ACTIVE_CODE_EXISTS = 'ACTIVE_CODE_EXISTS', // User has a valid, non-expired code
+	FIRST_CODE = 'FIRST_CODE', // First time user requesting a code
+	CODE_RENEWED = 'CODE_RENEWED' // Previous code expired, new code generated
+}
+
+export interface ManyChatInstagramCodeResponse {
+	status: InstagramCodeStatus
+	code?: number
+	expires_at?: number
 }
