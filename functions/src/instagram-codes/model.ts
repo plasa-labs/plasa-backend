@@ -55,7 +55,7 @@ export interface CodeResponseData {
 	expires_at?: number
 }
 
-export interface ManyChatResponse {
+export interface ManyChatMessageResponse {
 	version: 'v2'
 	content: {
 		type: 'instagram'
