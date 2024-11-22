@@ -2,8 +2,9 @@ import FirestoreService from '../common/firestoreService'
 import {
 	FirestoreInstagramCode,
 	ManyChatInstagramUser,
-	ManyChatInstagramCodeResponse,
-	InstagramCodeStatus
+	CodeResponseData,
+	InstagramCodeStatus,
+	ManyChatResponse
 } from './model'
 
 import { FirestoreInstagramUserData } from '../user/model'
@@ -16,7 +17,8 @@ class InstagramCodesService extends FirestoreService {
 	private readonly CODES_COLLECTION_NAME = 'instagram-codes'
 	private readonly USER_DATA_COLLECTION_NAME = 'users'
 
-	private readonly CODE_VALIDITY = 10 * 60 * 1000 // minutes -> milliseconds
+	private static readonly MINUTES_IN_MS = 60 * 1000
+	private readonly CODE_VALIDITY = 10 * InstagramCodesService.MINUTES_IN_MS
 
 	/**
 	 * Handles an Instagram user from ManyChat and manages their verification code.
@@ -32,7 +34,7 @@ class InstagramCodesService extends FirestoreService {
 	 */
 	async handleManyChatInstagramUser(
 		manyChatData: ManyChatInstagramUser
-	): Promise<ManyChatInstagramCodeResponse> {
+	): Promise<ManyChatResponse> {
 		const instagramId = manyChatData.ig_id as number
 
 		try {
@@ -40,9 +42,9 @@ class InstagramCodesService extends FirestoreService {
 			const isRegistered = await this.isInstagramIdRegistered(instagramId)
 
 			if (isRegistered) {
-				return {
+				return this.createManyChatResponse({
 					status: InstagramCodeStatus.ALREADY_REGISTERED
-				}
+				})
 			}
 
 			// Check if user has any active codes
@@ -60,11 +62,11 @@ class InstagramCodesService extends FirestoreService {
 
 				if (validCode) {
 					const code = validCode as FirestoreInstagramCode
-					return {
+					return this.createManyChatResponse({
 						status: InstagramCodeStatus.ACTIVE_CODE_EXISTS,
 						code: code.code,
 						expires_at: code.created_at + this.CODE_VALIDITY
-					}
+					})
 				}
 			}
 
@@ -77,14 +79,55 @@ class InstagramCodesService extends FirestoreService {
 			const savedCode = await this.saveNewCode(newCode, firestoreCodeData)
 
 			// Return appropriate status based on whether this is first code or renewal
-			return {
+			return this.createManyChatResponse({
 				status: existingCodes ? InstagramCodeStatus.CODE_RENEWED : InstagramCodeStatus.FIRST_CODE,
 				code: newCode,
 				expires_at: savedCode.created_at + this.CODE_VALIDITY
-			}
+			})
 		} catch (error) {
 			console.error('Error handling ManyChat Instagram user:', error)
-			throw error
+			if (error instanceof Error) {
+				throw new Error(`Failed to handle Instagram user: ${error.message}`)
+			}
+			throw new Error('Failed to handle Instagram user: Unknown error')
+		}
+	}
+
+	private formatDateTime(timestamp: number): string {
+		const date = new Date(timestamp)
+		return date.toLocaleString('es-AR', {
+			timeZone: 'America/Argentina/Buenos_Aires',
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		})
+	}
+
+	private createManyChatResponse(code: CodeResponseData): ManyChatResponse {
+		let message = ''
+
+		if (code.status === InstagramCodeStatus.ALREADY_REGISTERED) {
+			message = 'Tu cuenta de Instagram ya está registrada en la plataforma D&D.'
+		} else {
+			const formattedCode = String(code.code).replace(/(\d{3})(\d{3})/, '$1 $2')
+			const expiryDate = this.formatDateTime(code.expires_at!)
+
+			message = `Código de verificación: ${formattedCode}\n\nVálido hasta: ${expiryDate} hs. (UTC-3 Argentina)`
+		}
+
+		return {
+			version: 'v2',
+			content: {
+				type: 'instagram',
+				messages: [
+					{
+						type: 'text',
+						text: message
+					}
+				]
+			}
 		}
 	}
 
@@ -174,7 +217,7 @@ class InstagramCodesService extends FirestoreService {
 	 * @returns True if the code has expired, false otherwise.
 	 */
 	private hasExpired(code: FirestoreInstagramCode): boolean {
-		return Date.now() - code.created_at > this.CODE_VALIDITY
+		return Date.now() > this.expirationDate(code.created_at)
 	}
 
 	/**
@@ -208,6 +251,10 @@ class InstagramCodesService extends FirestoreService {
 		)
 
 		return existingUsers !== null
+	}
+
+	private expirationDate(created_at: number): number {
+		return created_at + this.CODE_VALIDITY
 	}
 }
 
