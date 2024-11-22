@@ -7,6 +7,7 @@ import cors from 'cors'
 initializeApp()
 
 import userRouter from './user/controller'
+import instagramCodesRouter from './instagram-codes/controller'
 
 /** Create a new Express app */
 const app = express()
@@ -18,6 +19,7 @@ app.use(express.json())
 app.get('/', (req, res) => res.send('Hello!'))
 
 app.use('/user', userRouter)
+app.use('/instagram', instagramCodesRouter)
 
 app.use((req: express.Request, res: express.Response) => {
 	res.status(404).json({ message: 'Not Found' })

@@ -1,63 +1,35 @@
-import InstagramService from './services/instagramService'
+import FirestoreService from '../common/firestoreService'
 import StampsSignaturesService from './services/stampsService'
 
-import { FollowerSinceStampSignature, UserFullData } from './model'
+import { FollowerSinceStampSignature, UserResponse } from './model'
+
+const stampsSignaturesService = new StampsSignaturesService()
 
 /**
  * Service class for managing user-related operations.
  */
-class UserService {
-	private instagramService: InstagramService
-	private stampsSignaturesService: StampsSignaturesService
-
-	/**
-	 * Initializes the UserService with instances of InstagramService and StampsSignaturesService.
-	 */
-	constructor() {
-		this.instagramService = new InstagramService()
-		this.stampsSignaturesService = new StampsSignaturesService()
-	}
-
-	/**
-	 * Sets the Instagram address for a user.
-	 * @param userId - The ID of the user.
-	 * @param instagramUsername - The Instagram username to set.
-	 * @returns A promise that resolves to the updated user data.
-	 */
-	async setUserInstagram(userId: string, instagramUsername: string): Promise<UserFullData | null> {
-		await this.instagramService.setUserInstagram(userId, instagramUsername)
-
-		const availableStamps = await this.stampsSignaturesService.getStampsSignatures(
-			userId,
-			instagramUsername
-		)
-
-		return {
-			instagram: instagramUsername,
-			address: userId,
-			availableStamps
-		}
-	}
-
+class UserService extends FirestoreService {
 	/**
 	 * Retrieves full data for a user, including Instagram and available stamps.
 	 * @param userId - The ID of the user.
 	 * @returns A promise that resolves to the user's full data.
 	 */
-	async getUserFullData(userId: string): Promise<UserFullData> {
-		const instagram = await this.instagramService.getUserInstagram(userId)
+	async getUserData(userId: string): Promise<UserResponse> {
+		const userData = await this.read('users', userId)
+
+		const instagramUsername = userData?.instagram_data?.username || null
 
 		let availableStamps: FollowerSinceStampSignature[] | null = null
 
 		// Check if Instagram is available and fetch stamps if so
-		if (instagram) {
-			availableStamps = await this.stampsSignaturesService.getStampsSignatures(userId, instagram)
+		if (instagramUsername) {
+			availableStamps = await stampsSignaturesService.getStampsSignatures(userId, instagramUsername)
 		}
 
 		return {
-			instagram,
-			address: userId,
-			availableStamps
+			instagram_username: instagramUsername,
+			user_id: userId,
+			available_stamps: availableStamps
 		}
 	}
 }
