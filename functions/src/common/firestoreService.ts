@@ -74,7 +74,8 @@ class FirestoreService {
 	): Promise<FirebaseFirestore.DocumentData> {
 		const docRef = db.collection(collection).doc()
 		await docRef.set(data)
-		return docRef.get().then((doc) => doc.data()!)
+		const doc = await docRef.get()
+		return doc.data()!
 	}
 
 	/**
