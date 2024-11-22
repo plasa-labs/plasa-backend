@@ -164,6 +164,27 @@ class FirestoreService {
 	}
 
 	/**
+	 * Queries documents from a specified collection where a specific field matches a given value.
+	 * @param collection - The name of the collection.
+	 * @param field - The field to query against.
+	 * @param value - The value to match.
+	 * @returns A promise that resolves to an array of document references or null if no documents are found.
+	 */
+	async queryByFieldSnapshot(
+		collection: string,
+		field: string,
+		value: unknown
+	): Promise<FirebaseFirestore.QuerySnapshot | null> {
+		const querySnapshot = await this.queryDocuments(collection, field, value)
+
+		if (querySnapshot.empty) {
+			return null
+		}
+
+		return querySnapshot
+	}
+
+	/**
 	 * Queries a document from a specified collection where a specific field matches a given value.
 	 * Ensures that only one document is returned.
 	 * @param collection - The name of the collection.
@@ -216,6 +237,21 @@ class FirestoreService {
 
 		// Map each document to its data
 		return querySnapshot.docs.map((doc) => doc.data())
+	}
+
+	/**
+	 * Writes data to a document using its reference. If the document exists, it merges the data.
+	 * @param docRef - The reference to the document to write to.
+	 * @param data - The data to write to the document.
+	 * @returns A promise that resolves to the updated document data.
+	 */
+	async writeFromRef(
+		docRef: FirebaseFirestore.DocumentReference,
+		data: FirebaseFirestore.DocumentData
+	): Promise<FirebaseFirestore.DocumentData> {
+		await docRef.set(data, { merge: true })
+		const updatedData = await docRef.get()
+		return updatedData.data()!
 	}
 }
 
