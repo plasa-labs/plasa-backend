@@ -1,5 +1,5 @@
 import InstagramCommonService from './common/instagramCommonService'
-import { FirestoreInstagramCode, CodeVerificationResult, CodeVerificationStatus } from '../model'
+import { FirestoreInstagramCode, InstagramCodeVerificationStatus } from '../model'
 
 /**
  * Service for handling Instagram verification code validation.
@@ -10,25 +10,21 @@ class InstagramVerificationService extends InstagramCommonService {
 	 * Verifies a code for a given user address and links Instagram account if valid.
 	 * @param userId - The unique identifier of the user
 	 * @param code - The verification code to validate
-	 * @returns Promise<CodeVerificationResult> - Result of the verification process
+	 * @returns Promise<CodeVerificationStatus> - Result of the verification process
 	 * @throws Error if verification process fails
 	 */
-	async verifyCode(userId: string, code: number): Promise<CodeVerificationResult> {
+	async verifyCode(userId: string, code: number): Promise<InstagramCodeVerificationStatus> {
 		try {
 			// Check if user already has an Instagram link
 			const existingUserData = await this.read(this.USER_DATA_COLLECTION_NAME, userId)
 			if (existingUserData?.instagram_id) {
-				return {
-					status: CodeVerificationStatus.USER_ALREADY_LINKED
-				}
+				return InstagramCodeVerificationStatus.USER_ALREADY_LINKED
 			}
 
 			const codeSnapshot = await this.queryByFieldSnapshot(this.CODES_COLLECTION_NAME, 'code', code)
 
 			if (!codeSnapshot) {
-				return {
-					status: CodeVerificationStatus.INVALID_CODE
-				}
+				return InstagramCodeVerificationStatus.INVALID_CODE
 			}
 
 			const activeCode = codeSnapshot.docs.find(
@@ -36,35 +32,24 @@ class InstagramVerificationService extends InstagramCommonService {
 			)
 
 			if (!activeCode) {
-				return {
-					status: CodeVerificationStatus.EXPIRED_CODE
-				}
+				return InstagramCodeVerificationStatus.EXPIRED_CODE
 			}
 
 			const activeCodeData = activeCode!.data() as FirestoreInstagramCode
 
 			if (activeCodeData.used) {
-				return {
-					status: CodeVerificationStatus.USED_CODE
-				}
+				return InstagramCodeVerificationStatus.USED_CODE
 			}
 
 			const isRegistered = await this.isInstagramIdRegistered(activeCodeData.instagram_id)
 			if (isRegistered) {
-				return {
-					status: CodeVerificationStatus.INSTAGRAM_ALREADY_LINKED
-				}
+				return InstagramCodeVerificationStatus.INSTAGRAM_ALREADY_LINKED
 			}
 
 			// Register the Instagram ID with the user address
 			await this.linkInstagram(userId, activeCode)
 
-			return {
-				status: CodeVerificationStatus.SUCCESS,
-				instagramData: activeCodeData.instagram_data,
-				instagramId: activeCodeData.instagram_id,
-				userId: userId
-			}
+			return InstagramCodeVerificationStatus.SUCCESS
 		} catch (error) {
 			console.error('Error verifying code:', error)
 			throw error

@@ -1,5 +1,5 @@
 import FirestoreService from '../../../common/firestoreService'
-import { FirestoreInstagramCode, ManyChatInstagramUser } from '../../model'
+import { FirestoreInstagramCode, ManyChatInstagramRequest } from '../../model'
 import { FirestoreInstagramUserData } from '../../../user/model'
 
 /**
@@ -58,7 +58,7 @@ class InstagramCodesCommonService extends FirestoreService {
 	 * Converts ManyChat data to Firestore format.
 	 */
 	protected convertManyChatToFirestoreData(
-		manyChatData: ManyChatInstagramUser
+		manyChatData: ManyChatInstagramRequest
 	): FirestoreInstagramUserData {
 		return {
 			id: manyChatData.ig_id,

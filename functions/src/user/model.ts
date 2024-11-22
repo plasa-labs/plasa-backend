@@ -33,11 +33,11 @@ export interface FollowerSinceStampSignature {
  */
 export interface UserResponse {
 	/** The user's blockchain address. */
-	address: string
+	user_id: string
 	/** The user's Instagram handle, if available. */
 	instagram_username: string | null
 	/** A list of available follower stamps, if any. */
-	availableStamps?: FollowerSinceStampSignature[] | null
+	available_stamps?: FollowerSinceStampSignature[] | null
 }
 
 export interface FirestoreInstagramUserData {

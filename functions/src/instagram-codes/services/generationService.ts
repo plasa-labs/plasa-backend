@@ -1,10 +1,10 @@
 import InstagramCodesCommonService from './common/instagramCommonService'
 import {
-	InstagramCodeStatus,
-	ManyChatInstagramUser,
+	InstagramCodeGenerationStatus,
+	ManyChatInstagramRequest,
 	ManyChatMessageResponse,
 	FirestoreInstagramCode,
-	CodeResponseData
+	InstagramCodeGenerationResult
 } from '../model'
 import { FirestoreInstagramUserData } from '../../user/model'
 
@@ -18,7 +18,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 	 * @param manyChatData - The Instagram user data from ManyChat
 	 * @returns A formatted message response for ManyChat
 	 */
-	async getCodeMessage(manyChatData: ManyChatInstagramUser): Promise<ManyChatMessageResponse> {
+	async getCodeMessage(manyChatData: ManyChatInstagramRequest): Promise<ManyChatMessageResponse> {
 		const codeResponseData = await this.codeResponseData(manyChatData)
 		return this.createManyChatResponse(codeResponseData)
 	}
@@ -33,7 +33,9 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 	 * @returns Code response data containing status and code information
 	 * @throws Error if processing fails
 	 */
-	private async codeResponseData(manyChatData: ManyChatInstagramUser): Promise<CodeResponseData> {
+	private async codeResponseData(
+		manyChatData: ManyChatInstagramRequest
+	): Promise<InstagramCodeGenerationResult> {
 		const instagramId = manyChatData.ig_id
 
 		try {
@@ -41,7 +43,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 			const isRegistered = await this.isInstagramIdRegistered(instagramId)
 			if (isRegistered) {
 				return {
-					status: InstagramCodeStatus.ALREADY_REGISTERED
+					status: InstagramCodeGenerationStatus.ALREADY_REGISTERED
 				}
 			}
 
@@ -61,7 +63,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 				if (validCode) {
 					const code = validCode as FirestoreInstagramCode
 					return {
-						status: InstagramCodeStatus.ACTIVE_CODE_EXISTS,
+						status: InstagramCodeGenerationStatus.ACTIVE_CODE_EXISTS,
 						code: code.code,
 						expires_at: code.created_at + this.CODE_VALIDITY
 					}
@@ -74,7 +76,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 			const savedCode = await this.saveNewCode(newCode, firestoreCodeData)
 
 			return {
-				status: InstagramCodeStatus.FIRST_CODE,
+				status: InstagramCodeGenerationStatus.FIRST_CODE,
 				code: newCode,
 				expires_at: savedCode.created_at + this.CODE_VALIDITY
 			}
@@ -92,10 +94,10 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 	 * @param code - The code response data containing status and verification details
 	 * @returns Formatted ManyChat message response
 	 */
-	private createManyChatResponse(code: CodeResponseData): ManyChatMessageResponse {
+	private createManyChatResponse(code: InstagramCodeGenerationResult): ManyChatMessageResponse {
 		let message = ''
 
-		if (code.status === InstagramCodeStatus.ALREADY_REGISTERED) {
+		if (code.status === InstagramCodeGenerationStatus.ALREADY_REGISTERED) {
 			message = 'Tu cuenta de Instagram ya está vinculada a una cuenta de la plataforma.'
 		} else {
 			const formattedCode = String(code.code).replace(/(\d{3})(\d{3})/, '$1 $2')

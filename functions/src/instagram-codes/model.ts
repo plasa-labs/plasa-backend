@@ -1,6 +1,6 @@
-import { FirestoreInstagramUserData } from '../user/model'
+import { FirestoreInstagramUserData, UserResponse } from '../user/model'
 
-export interface ManyChatInstagramUser {
+export interface ManyChatInstagramRequest {
 	key: string
 	id: string
 	page_id: string
@@ -43,15 +43,15 @@ export interface FirestoreInstagramCode {
 	instagram_data: FirestoreInstagramUserData
 }
 
-export enum InstagramCodeStatus {
+export enum InstagramCodeGenerationStatus {
 	ALREADY_REGISTERED = 'ALREADY_REGISTERED', // User's Instagram ID is already in the system
 	ACTIVE_CODE_EXISTS = 'ACTIVE_CODE_EXISTS', // User has a valid, non-expired code
 	FIRST_CODE = 'FIRST_CODE', // First time user requesting a code
 	CODE_RENEWED = 'CODE_RENEWED' // Previous code expired, new code generated
 }
 
-export interface CodeResponseData {
-	status: InstagramCodeStatus
+export interface InstagramCodeGenerationResult {
+	status: InstagramCodeGenerationStatus
 	code?: number
 	expires_at?: number
 }
@@ -67,7 +67,7 @@ export interface ManyChatMessageResponse {
 	}
 }
 
-export enum CodeVerificationStatus {
+export enum InstagramCodeVerificationStatus {
 	INVALID_CODE = 'Invalid code',
 	EXPIRED_CODE = 'Code expired',
 	USED_CODE = 'Code already used',
@@ -76,14 +76,12 @@ export enum CodeVerificationStatus {
 	SUCCESS = 'Success'
 }
 
-export interface CodeVerificationResult {
-	status: CodeVerificationStatus
-	instagramData?: FirestoreInstagramUserData
-	instagramId?: number
-	userId?: string
-}
-
-export interface InstagramCodeVerificationBody {
+export interface InstagramCodeVerificationRequest {
 	code: number
 	user_id: string
+}
+
+export interface InstagramCodeVerificationResponse {
+	status: InstagramCodeVerificationStatus
+	user_data: UserResponse
 }
