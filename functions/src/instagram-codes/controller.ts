@@ -1,5 +1,5 @@
 import express from 'express'
-import InstagramCodesService from './service'
+import InstagramCodesGenerationService from './services/generationService'
 import { ManyChatInstagramUser } from './model'
 
 /**
@@ -10,7 +10,7 @@ const instagramCodesRouter = express.Router()
 /**
  * Service instance for handling Instagram code operations
  */
-const instagramCodesService = new InstagramCodesService()
+const instagramCodesGenerationService = new InstagramCodesGenerationService()
 
 /**
  * Middleware to validate the ManyChat API key.
@@ -65,7 +65,7 @@ export async function getInstagramCode(req: express.Request, res: express.Respon
 			return res.status(400).json({ message: 'Invalid request data' })
 		}
 
-		const response = await instagramCodesService.handleManyChatInstagramUser(manyChatData)
+		const response = await instagramCodesGenerationService.getCodeMessage(manyChatData)
 		return res.json(response)
 	} catch (error) {
 		console.error('Error in getInstagramCode:', error)
