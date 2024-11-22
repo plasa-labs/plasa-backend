@@ -38,6 +38,7 @@ export interface ManyChatInstagramUser {
 export interface FirestoreInstagramCode {
 	code: number
 	created_at: number
+	used: boolean
 	instagram_id: number
 	instagram_data: FirestoreInstagramUserData
 }
@@ -64,4 +65,20 @@ export interface ManyChatMessageResponse {
 			text: string
 		}>
 	}
+}
+
+export enum CodeVerificationStatus {
+	INVALID_CODE = 'Invalid code',
+	EXPIRED_CODE = 'Code expired',
+	USED_CODE = 'Code already used',
+	INSTAGRAM_ALREADY_LINKED = 'Instagram already linked',
+	USER_ALREADY_LINKED = 'User already linked',
+	SUCCESS = 'Success'
+}
+
+export interface CodeVerificationResult {
+	status: CodeVerificationStatus
+	instagramData?: FirestoreInstagramUserData
+	instagramId?: number
+	userId?: string
 }
