@@ -49,8 +49,19 @@ export enum InstagramCodeStatus {
 	CODE_RENEWED = 'CODE_RENEWED' // Previous code expired, new code generated
 }
 
-export interface ManyChatInstagramCodeResponse {
+export interface CodeResponseData {
 	status: InstagramCodeStatus
 	code?: number
 	expires_at?: number
+}
+
+export interface ManyChatResponse {
+	version: 'v2'
+	content: {
+		type: 'instagram'
+		messages: Array<{
+			type: 'text'
+			text: string
+		}>
+	}
 }
