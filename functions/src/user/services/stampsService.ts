@@ -71,8 +71,6 @@ class StampsSignaturesService {
 		// Check follower since data for each stamp and generate signatures
 		const signatures: (FollowerSinceStampSignature | null)[] = await Promise.all(
 			stamps.map(async (stamp) => {
-				const authentic = true
-
 				// Retrieve the 'follower since' timestamp
 				const since = await this.getFollowerSince(
 					stamp.platform,
@@ -80,10 +78,7 @@ class StampsSignaturesService {
 					stamp.followedAccount
 				)
 
-				// If no timestamp is found, generate a random one
 				if (!since) {
-					// since = this.generateRandomFollowerSince()
-					// authentic = false
 					return null
 				}
 
@@ -98,8 +93,7 @@ class StampsSignaturesService {
 					signature,
 					deadline,
 					since,
-					stamp,
-					authentic
+					stamp
 				}
 			})
 		)

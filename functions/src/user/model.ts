@@ -24,8 +24,6 @@ export interface FollowerSinceStampSignature {
 	since: number
 	/** The actual stamp data. */
 	stamp: FollowerSinceStamp
-	/** Indicates if the signature is authentic. Mock signatures can be generated for testing. */
-	authentic: boolean
 }
 
 /**

@@ -55,8 +55,7 @@ Using Firebase Functions and Firestore.
         				"chainId": "number",
         				"platform": "string",
         				"followedAccount": "string"
-        			},
-        			"authentic": "boolean"
+        			}
         		}
         	] | null
         }
@@ -145,8 +144,7 @@ Using Firebase Functions and Firestore.
     				"chainId": "number",
     				"platform": "string",
     				"followedAccount": "string"
-    			},
-    			"authentic": "boolean"
+    			}
     		}
     	] | null
     }
@@ -180,8 +178,7 @@ Using Firebase Functions and Firestore.
     				chainId: 1,
     				platform: 'example_platform',
     				followedAccount: 'example_followedAccount'
-    			},
-    			authentic: true
+    			}
     		}
     	]
     }
