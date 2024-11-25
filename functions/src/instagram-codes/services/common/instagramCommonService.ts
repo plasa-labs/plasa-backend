@@ -11,7 +11,7 @@ class InstagramCodesCommonService extends FirestoreService {
 	protected readonly USER_DATA_COLLECTION_NAME = 'users'
 
 	protected static readonly MINUTES_IN_MS = 60 * 1000
-	protected readonly CODE_VALIDITY = 10 * InstagramCodesCommonService.MINUTES_IN_MS
+	protected readonly CODE_VALIDITY = 5 * InstagramCodesCommonService.MINUTES_IN_MS
 
 	/**
 	 * Checks if a code has expired.
