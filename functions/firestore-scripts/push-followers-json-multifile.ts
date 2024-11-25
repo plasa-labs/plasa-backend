@@ -7,9 +7,18 @@ import * as fs from 'fs/promises'
 
 dotenv.config()
 
-const collectionId = process.env.FOLLOWERS_COLLECTION_TO_PUSH
-const serviceAccountPath = path.join(__dirname, process.env.SERVICE_ACCOUNT_PATH!)
-const folderName = process.env.FOLLOWERS_FOLDER_NAME
+// Add environment variable checks
+if (!process.env.SERVICE_ACCOUNT_PATH) {
+	throw new Error('SERVICE_ACCOUNT_PATH environment variable is not set')
+}
+
+if (!process.env.INSTAGRAM_ACCOUNT_TO_PUSH) {
+	throw new Error('INSTAGRAM_ACCOUNT_TO_PUSH environment variable is not set')
+}
+
+const serviceAccountPath = path.join(__dirname, process.env.SERVICE_ACCOUNT_PATH)
+const folderName = process.env.INSTAGRAM_ACCOUNT_TO_PUSH
+const collectionId = 'followers-instagram-' + folderName
 
 initializeApp({
 	credential: admin.credential.cert(serviceAccountPath)
@@ -39,13 +48,16 @@ async function addFollowersToFirestore(
 			const { value: username, timestamp } = follower.string_list_data[0]
 
 			try {
-				if (username.startsWith('__') && username.endsWith('__')) {
-					console.warn(`Skipping reserved username: ${username}`)
-					skippedFollowers++
-					continue
-				}
+				// if (username.startsWith('__') && username.endsWith('__')) {
+				// if (username.startsWith('__') && username.endsWith('__')) {
+				// 	console.warn(`Skipping reserved username: ${username}`)
+				// 	skippedFollowers++
+				// 	continue
+				// }
 
-				const docRef = db.collection(collectionId!).doc(username)
+				const modifiedUsername = '@' + username
+
+				const docRef = db.collection(collectionId!).doc(modifiedUsername)
 				batch.set(docRef, { follower_since: timestamp, username: username })
 
 				count++
@@ -80,9 +92,9 @@ async function addFollowersToFirestore(
 
 		console.log(
 			`File Summary: ${path.basename(filePath)}\n` +
-				`  Total followers added: ${totalFollowers}\n` +
-				`  Skipped followers: ${skippedFollowers}\n` +
-				`  Total processed: ${totalFollowers + skippedFollowers}`
+			`  Total followers added: ${totalFollowers}\n` +
+			`  Skipped followers: ${skippedFollowers}\n` +
+			`  Total processed: ${totalFollowers + skippedFollowers}`
 		)
 
 		return { added: totalFollowers, skipped: skippedFollowers }
@@ -133,9 +145,9 @@ async function processAllFollowerFiles(): Promise<void> {
 		console.log(`All ${jsonFiles.length} follower files have been processed.`)
 		console.log(
 			`Grand Total Summary:\n` +
-				`  Total followers added: ${grandTotalFollowers}\n` +
-				`  Total followers skipped: ${grandTotalSkipped}\n` +
-				`  Total followers processed: ${grandTotalFollowers + grandTotalSkipped}`
+			`  Total followers added: ${grandTotalFollowers}\n` +
+			`  Total followers skipped: ${grandTotalSkipped}\n` +
+			`  Total followers processed: ${grandTotalFollowers + grandTotalSkipped}`
 		)
 	} catch (error) {
 		console.error('Error processing follower files:', error)
