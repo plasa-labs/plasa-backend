@@ -113,9 +113,9 @@ class StampsSignaturesService {
 		followerAccount: string,
 		followedAccount: string
 	): Promise<number | null> {
-		// const collectionName = `${platform}-${followedAccount}`
-		const collectionName = followedAccount
-		const documentData = await firestoreService.read(collectionName, followerAccount)
+		const collectionName = `followers-${platform.toLowerCase()}-${followedAccount}`
+		const documentName = '@' + followerAccount
+		const documentData = await firestoreService.read(collectionName, documentName)
 
 		// Return the 'follower since' timestamp if available
 		return documentData ? documentData.follower_since || null : null

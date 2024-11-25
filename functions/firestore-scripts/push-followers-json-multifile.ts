@@ -92,9 +92,9 @@ async function addFollowersToFirestore(
 
 		console.log(
 			`File Summary: ${path.basename(filePath)}\n` +
-			`  Total followers added: ${totalFollowers}\n` +
-			`  Skipped followers: ${skippedFollowers}\n` +
-			`  Total processed: ${totalFollowers + skippedFollowers}`
+				`  Total followers added: ${totalFollowers}\n` +
+				`  Skipped followers: ${skippedFollowers}\n` +
+				`  Total processed: ${totalFollowers + skippedFollowers}`
 		)
 
 		return { added: totalFollowers, skipped: skippedFollowers }
@@ -145,9 +145,9 @@ async function processAllFollowerFiles(): Promise<void> {
 		console.log(`All ${jsonFiles.length} follower files have been processed.`)
 		console.log(
 			`Grand Total Summary:\n` +
-			`  Total followers added: ${grandTotalFollowers}\n` +
-			`  Total followers skipped: ${grandTotalSkipped}\n` +
-			`  Total followers processed: ${grandTotalFollowers + grandTotalSkipped}`
+				`  Total followers added: ${grandTotalFollowers}\n` +
+				`  Total followers skipped: ${grandTotalSkipped}\n` +
+				`  Total followers processed: ${grandTotalFollowers + grandTotalSkipped}`
 		)
 	} catch (error) {
 		console.error('Error processing follower files:', error)
