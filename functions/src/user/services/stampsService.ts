@@ -69,12 +69,12 @@ class StampsSignaturesService {
 		instagramUsername: string
 	): Promise<FollowerSinceStampSignature[]> {
 		// Check follower since data for each stamp and generate signatures
-		const signatures: FollowerSinceStampSignature[] = await Promise.all(
+		const signatures: (FollowerSinceStampSignature | null)[] = await Promise.all(
 			stamps.map(async (stamp) => {
-				let authentic = true
+				const authentic = true
 
 				// Retrieve the 'follower since' timestamp
-				let since = await this.getFollowerSince(
+				const since = await this.getFollowerSince(
 					stamp.platform,
 					instagramUsername,
 					stamp.followedAccount
@@ -82,8 +82,9 @@ class StampsSignaturesService {
 
 				// If no timestamp is found, generate a random one
 				if (!since) {
-					since = this.generateRandomFollowerSince()
-					authentic = false
+					// since = this.generateRandomFollowerSince()
+					// authentic = false
+					return null
 				}
 
 				// Generate a signature for the follower since data
@@ -102,7 +103,8 @@ class StampsSignaturesService {
 				}
 			})
 		)
-		return signatures
+		const filteredSignatures = signatures.filter((signature) => signature !== null)
+		return filteredSignatures
 	}
 
 	/**
@@ -165,18 +167,18 @@ class StampsSignaturesService {
 		return { signature, deadline }
 	}
 
-	/**
-	 * Generates a random Unix timestamp representing a follower's "since" date.
-	 * The date will be between June 12, 2024, and the current date.
-	 * @returns A random Unix timestamp.
-	 */
-	private generateRandomFollowerSince(): number {
-		const JUNE_12_2024 = 1718236800 // Unix timestamp for June 12, 2024
-		const now = Math.floor(Date.now() / 1000) // Current Unix timestamp
+	// /**
+	//  * Generates a random Unix timestamp representing a follower's "since" date.
+	//  * The date will be between June 12, 2024, and the current date.
+	//  * @returns A random Unix timestamp.
+	//  */
+	// private generateRandomFollowerSince(): number {
+	// 	const JUNE_12_2024 = 1718236800 // Unix timestamp for June 12, 2024
+	// 	const now = Math.floor(Date.now() / 1000) // Current Unix timestamp
 
-		// Generate a random timestamp between June 12, 2024, and now
-		return JUNE_12_2024 + Math.floor(Math.random() * (now - JUNE_12_2024))
-	}
+	// 	// Generate a random timestamp between June 12, 2024, and now
+	// 	return JUNE_12_2024 + Math.floor(Math.random() * (now - JUNE_12_2024))
+	// }
 }
 
 export default StampsSignaturesService
