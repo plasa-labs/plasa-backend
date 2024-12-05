@@ -102,7 +102,7 @@ class InstagramCodesGenerationService extends InstagramCodesCommonService {
 		} else {
 			const formattedCode = String(code.code).replace(/(\d{3})(\d{3})/, '$1 $2')
 			const expiryDate = this.formatDateTime(code.expires_at!)
-			message = `Para vincular tu cuenta de Instagram, podés ingresar al siguiente link: https://alpha.ddfundacion.org/onboarding?code=${code.code}\n\nO ingresar manualmente el siguiente código de verificación: ${formattedCode}\n\nVálido hasta: ${expiryDate} hs. (UTC-3 Argentina)`
+			message = `Para vincular tu cuenta de Instagram, podés ingresar al siguiente link en tu navegador: https://alpha.ddfundacion.org/onboarding?code=${code.code}\n\nO ingresar manualmente el código de verificación: ${formattedCode}\n\nVálido hasta: ${expiryDate} hs. (UTC-3 Argentina)`
 		}
 
 		return {
